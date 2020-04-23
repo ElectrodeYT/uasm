@@ -20,3 +20,12 @@ Argument Arguments::decodeArgV(int argc, char** argv) {
 	}
 	return args;
 }
+
+std::string Arguments::getArgument(Argument args, char name) {
+	for (int i = 0; i < args.argumentName.size(); i++) {
+		if (args.argumentName.at(i) == name) {
+			return args.argumentData.at(i);
+		}
+	}
+	return "";
+}

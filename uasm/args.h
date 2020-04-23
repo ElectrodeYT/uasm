@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 
+
 namespace Arguments {
 
 	class Argument {
@@ -11,5 +12,5 @@ namespace Arguments {
 	};
 
 	Argument decodeArgV(int argc, char** argv);
-
+	std::string getArgument(Argument args, char name);
 }
