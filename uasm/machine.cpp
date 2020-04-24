@@ -5,10 +5,16 @@
 #include "machine.h"
 #include "helper.h"
 
+// file version identifier
+#define UASM_MACHINE_FILE_VERSION "1.0"
+
+
 using namespace Machine;
 
+// Turn a file into a MachineFile
 MachineFile Machine::readMachine(std::string path) {
 	MachineFile machine = MachineFile();
+	int warn_count = 0; // warning counter
 	// Check if path contains a extension
 	if (path.find('.') == std::string::npos) {
 		path = path += ".mach";
@@ -16,24 +22,69 @@ MachineFile Machine::readMachine(std::string path) {
 	std::ifstream ifstream(path);
 	if (!ifstream.is_open()) { std::cerr << "[Machine] Machine file could not be opened!\n"; return machine; }
 	std::string s;
+	// Get Rules and other, not really that important info
 	while (std::getline(ifstream, s)) {
+		std::vector<std::string> v = convertFileLineToVector(s);
+		// check if a line is a rule line
+		if (!v.empty() && v.size() > 1 && v.at(0) == "rule") {
+			std::vector<std::string> r = Helper::splitStringByColon(v.at(1));
+			if (!r.empty() || !r.size() == 1) {
+				Rule rule;
+				rule.name = r.at(0);
+				rule.data = r.at(1);
+				machine.rules.push_back(rule);
+			}
+		}
+		// check if a line defines the file version
+		if (!v.empty() && v.size() > 1 && v.at(0) == "uasm") {
+			machine.version = v.at(1);
+		}
+		// check if a line defines the machine (long) name
+		if (!v.empty() && v.size() > 1 && v.at(0) == "name") {
+			machine.name = v.at(1);
+		}
+	}
+	if (machine.version == "") { std::cerr << "[Machine] [WARN] File does not define a version!\n"; warn_count++; }
+	else if (machine.version != UASM_MACHINE_FILE_VERSION) { std::cerr << "[Machine] [WARN] File version file incorrect! File Version: " << machine.version << "\n"; warn_count++; }
+	if (machine.name == "") { std::cerr << "[Machine] [WARN] File does not define a machine name!\n"; warn_count++; } else { std::cout << "[Machine] Machine name: " << machine.name << "\n"; }
+	// close and reopen the file
+	ifstream.close();
+	ifstream.open(path, std::ios::in);
+	// Get Instructions and registers
+	while (std::getline(ifstream, s)) {
+		// split the file line into a more easily workable vector
 		std::vector<std::string> line = convertFileLineToVector(s);
+		// check if the line is invalid/empty/just a comment
 		if (line.empty()) { continue; }
+		// check if the file declares a instruction
 		if (line.at(0) == "inst") {
 			// instruction definition
 			Instruction new_inst;
+			// decode the line
 			new_inst.decodeInstLine(line);
-
-			std::cout << "Instruction name: " << new_inst.mnemonic << "\nInstruction bits: ";
-			for (int i = 0; i < new_inst.instruction.size(); i++) {
-				std::cout << new_inst.instruction.at(i);
-			}
-			std::cout << "\n";
 			// add the instruction to the machine
 			machine.instructions.push_back(new_inst);
 		}
+		// check if the file declares a register
+		if (line.at(0) == "reg") {
+			// get the register nameand bit size
+			std::vector<std::string> reg = Helper::splitStringByColon(line.at(1));
+			if (reg.empty() || reg.size() == 1) {
+				std::cerr << "[Register] Register line invalid!\n";
+				exit(-1);
+			}
+			// cannt be bothered to check for correctness, this will do for now
+			Register new_reg;
+			new_reg.name = reg.at(0);
+			new_reg.bitsize = std::stoi(reg.at(1));
+			machine.registers.push_back(new_reg);
+		}
 	}
-
+	if (warn_count != 1) {
+		std::cout << "[Machine] Finished reading machine file, " << warn_count << " Warnings\n";
+	} else {
+		std::cout << "[Machine] Finished reading machine file, " << warn_count << " Warning\n";
+	}
 	return machine;
 }
 
@@ -111,8 +162,6 @@ std::vector<std::string> Machine::convertFileLineToVector(std::string s) {
 	/// "name" of the line
 	std::string name = s.substr(0, s.find(':'));
 	std::string data = s.substr(s.find(':') + 1);
-	// remove all whitespaces
-	data.erase(std::remove_if(data.begin(), data.end(), std::isspace), data.end());
 	// seperate data by commas
 	std::vector<std::string> arguments;
 	std::stringstream data_sstream(data);
@@ -121,11 +170,10 @@ std::vector<std::string> Machine::convertFileLineToVector(std::string s) {
 		getline(data_sstream, t, ',');
 		arguments.push_back(t);
 	}
-
-	// construct return vector
+	// remove all leading and trailing whitespaces and construct return vector
 	ret.push_back(name);
 	for (int i = 0; i < arguments.size(); i++) {
-		ret.push_back(arguments.at(i));
+		ret.push_back(arguments.at(i).substr(arguments.at(i).find_first_not_of(' '), arguments.at(i).find_last_not_of(' '))); // disgusting, isnt it?
 	}
 
 	return ret;

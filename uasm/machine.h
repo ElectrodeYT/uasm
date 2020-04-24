@@ -17,9 +17,24 @@ namespace Machine {
 		void decodeInstLine(std::vector<std::string> line);
 
 	};
+	class Register {
+	public:
+		std::string name;
+		int bitsize;
+	};
+	class Rule {
+	public:
+		std::string name;
+		std::string data;
+	};
 	class MachineFile {
 	public:
 		std::vector<Instruction> instructions;
+		std::vector<Register> registers;
+		std::vector<Rule> rules;
+		
+		std::string version;
+		std::string name;
 	};
 
 	MachineFile readMachine(std::string path);

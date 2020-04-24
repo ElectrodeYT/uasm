@@ -1,5 +1,5 @@
 #uasm: 1.0;		Version of UASM Machine File
-#name: simple;	Name of the machine
+#name: Simple Example Machine;	Name of the machine
 #reg: a:8;		Registers
 #reg: b:8;
 #reg: c:8;
@@ -12,5 +12,5 @@
 #rule: inst-size:0;			Instruction Size rule. Defaults to 0, which means variable. Setting it to a byte variable will pad all instructions automatically (instructions that are the same size or longer as this will not be padded)
 #rule: inst-pad:0;			0: pad to front (xxxxxxxxpppppppp), 1: pad to back (ppppppppxxxxxxxx)
 #rule: endian:0;			0: little, 1: big
-#rule: default-origin:0;	Default program origin
+#rule: default-origin:0x100;	Default program origin
 #rule: jump-label-offset:0;	Offset added or subtracted to a jump instruction
