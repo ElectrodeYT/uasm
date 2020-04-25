@@ -124,19 +124,25 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="args.cpp" />
+    <ClCompile Include="assembler.cpp" />
     <ClCompile Include="helper.cpp" />
     <ClCompile Include="machine.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="args.h" />
+    <ClInclude Include="assembler.h" />
     <ClInclude Include="helper.h" />
     <ClInclude Include="machine.h" />
+    <ClInclude Include="main.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />
     <None Include="simple.mach">
       <DeploymentContent>true</DeploymentContent>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="simple.s">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

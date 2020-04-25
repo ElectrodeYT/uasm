@@ -137,6 +137,8 @@ void Machine::Instruction::decodeInstLine(std::vector<std::string> line) {
 	}
 	// get instruction type
 	instruction_type = std::stoi(line.at(line.size() - 1));
+	// calculate the instruction length
+	instruction_length = instruction.size() / 8;
 }
 #pragma endregion
 

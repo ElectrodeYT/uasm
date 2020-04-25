@@ -3,4 +3,5 @@
 #include <string>
 namespace Helper {
 	std::vector<std::string> splitStringByColon(std::string s);
+	std::vector<std::string> splitString(std::string s, char a);
 }

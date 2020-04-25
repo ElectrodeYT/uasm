@@ -13,6 +13,7 @@ namespace Machine {
 										// 1: always 1
 										// 2+: arguments 0+
 		int instruction_type = 0;
+		int instruction_length = 0; // length of the instruction, in bytes
 		/// Decode a file line into the instruction
 		void decodeInstLine(std::vector<std::string> line);
 

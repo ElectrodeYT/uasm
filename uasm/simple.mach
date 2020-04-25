@@ -6,8 +6,8 @@
 ; Instructions definition
 ;				  r = register id
 #inst: mov:a:b, a:r, b:r, 0000aabb, 0;				Instruction Syntax: name:args:args:...,arg1:bitsize,arg2....,bits with the bits for the args filled in (must be in bytes), instruction type
-#inst: mov:a:b, a:8, b:2, 000100bbaaaaaaaa, 0;		Instructions can have multiple definitions, the first (or only) matching one will be used
-#inst: mov:a:b, a:2, b:8, 001000aabbbbbbbb, 0;
+#inst: mov:a:b, a:8, b:r, 000100bbaaaaaaaa, 0;		Instructions can have multiple definitions, the first (or only) matching one will be used
+#inst: mov:a:b, a:r, b:8, 001000aabbbbbbbb, 0;
 ; Rules
 #rule: inst-size:0;			Instruction Size rule. Defaults to 0, which means variable. Setting it to a byte variable will pad all instructions automatically (instructions that are the same size or longer as this will not be padded)
 #rule: inst-pad:0;			0: pad to front (xxxxxxxxpppppppp), 1: pad to back (ppppppppxxxxxxxx)
