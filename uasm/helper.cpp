@@ -10,7 +10,10 @@ std::vector<std::string> Helper::splitString(std::string s, char a) {
 	while (ss.good()) {
 		std::string t;
 		getline(ss, t, a);
-		ret.push_back(t.substr(t.find_first_not_of(' '), t.find_last_not_of(' ')));
+		// remove trailing and leading whitespaces
+		while (t.size() > 1 && t.at(0) == ' ') { t.erase(t.begin()); }
+		while (t.size() > 1 && t.at(t.size() - 1) == ' ') { t.erase(t.end()); }
+		ret.push_back(t);
 	}
 	return ret;
 }

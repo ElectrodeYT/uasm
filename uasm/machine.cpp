@@ -136,6 +136,7 @@ void Machine::Instruction::decodeInstLine(std::vector<std::string> line) {
 			}
 		}
 	}
+	std::reverse(instruction.begin(), instruction.end());
 	// get instruction type
 	instruction_type = std::stoi(line.at(line.size() - 1));
 	// calculate the instruction length
