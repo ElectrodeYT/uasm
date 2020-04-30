@@ -133,6 +133,7 @@
     <ClInclude Include="args.h" />
     <ClInclude Include="assembler.h" />
     <ClInclude Include="helper.h" />
+    <ClInclude Include="log.h" />
     <ClInclude Include="machine.h" />
     <ClInclude Include="main.h" />
   </ItemGroup>

@@ -4,6 +4,7 @@
 #include <algorithm>
 #include "machine.h"
 #include "helper.h"
+#include "log.h"
 
 // file version identifier
 #define UASM_MACHINE_FILE_VERSION "1.0"

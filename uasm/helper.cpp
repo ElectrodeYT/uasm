@@ -10,7 +10,7 @@ std::vector<std::string> Helper::splitString(std::string s, char a) {
 	while (ss.good()) {
 		std::string t;
 		getline(ss, t, a);
-		ret.push_back(t);
+		ret.push_back(t.substr(t.find_first_not_of(' '), t.find_last_not_of(' ')));
 	}
 	return ret;
 }
