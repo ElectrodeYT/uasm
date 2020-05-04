@@ -21,7 +21,7 @@ MachineFile Machine::readMachine(std::string path) {
 		path = path += ".mach";
 	}
 	std::ifstream ifstream(path);
-	if (!ifstream.is_open()) { std::cerr << "[Machine] Machine file could not be opened!\n"; return machine; }
+	if (!ifstream.is_open()) { QUIT_ERR("Machine", "Machine file could not be opened! File name: " << path); }
 	std::string s;
 	// Get Rules and other, not really that important info
 	while (std::getline(ifstream, s)) {
@@ -45,9 +45,9 @@ MachineFile Machine::readMachine(std::string path) {
 			machine.name = v.at(1);
 		}
 	}
-	if (machine.version == "") { std::cerr << "[Machine] [WARN] File does not define a version!\n"; warn_count++; }
-	else if (machine.version != UASM_MACHINE_FILE_VERSION) { std::cerr << "[Machine] [WARN] File version file incorrect! File Version: " << machine.version << "\n"; warn_count++; }
-	if (machine.name == "") { std::cerr << "[Machine] [WARN] File does not define a machine name!\n"; warn_count++; } else { std::cout << "[Machine] Machine name: " << machine.name << "\n"; }
+	if (machine.version == "") { LOG_WRN("Machine", "File does not define version!"); warn_count++; }
+	else if (machine.version != UASM_MACHINE_FILE_VERSION) { LOG_WRN("Machine", "File version incorrect! File version: " << machine.version); warn_count++; }
+	if (machine.name == "") { LOG_WRN("Machine", "File does not define machine name!"); warn_count++; } else { LOG_MSG("Machine", "Machine name: " << machine.name); }
 	// close and reopen the file
 	ifstream.close();
 	ifstream.open(path, std::ios::in);
@@ -71,8 +71,7 @@ MachineFile Machine::readMachine(std::string path) {
 			// get the register nameand bit size
 			std::vector<std::string> reg = Helper::splitStringByColon(line.at(1));
 			if (reg.empty() || reg.size() == 1) {
-				std::cerr << "[Register] Register line invalid!\n";
-				exit(-1);
+				QUIT_ERR_LINE("Machine", "Register line invalid!", s);
 			}
 			// cannt be bothered to check for correctness, this will do for now
 			Register new_reg;
@@ -177,7 +176,7 @@ std::vector<std::string> Machine::convertFileLineToVector(std::string s) {
 	// remove all leading and trailing whitespaces and construct return vector
 	ret.push_back(name);
 	for (int i = 0; i < arguments.size(); i++) {
-		ret.push_back(arguments.at(i).substr(arguments.at(i).find_first_not_of(' '), arguments.at(i).find_last_not_of(' '))); // disgusting, isnt it?
+		ret.push_back(arguments.at(i).substr(arguments.at(i).find_first_not_of(' '), arguments.at(i).find_last_not_of(' ') + 1)); // disgusting, isnt it?
 	}
 
 	return ret;

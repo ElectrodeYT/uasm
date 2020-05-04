@@ -3,4 +3,6 @@ mov a,86
 mov b,a
 .lbl abcdefg
 mov a,abcdefg
+hlt
+jmp abcdefg
 .lbl abcdefghijklmnop

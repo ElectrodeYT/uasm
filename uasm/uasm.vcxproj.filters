@@ -57,5 +57,11 @@
     <None Include="simple.s">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="chip8.mach">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="chip8.s">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

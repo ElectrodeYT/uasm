@@ -13,9 +13,15 @@ namespace Assembler {
 	public:
 		Machine::Instruction machine_instruction;
 		std::vector<std::string> arguments;
-		long long address;
+		long long address = 0;
 	};
 
-	std::vector<unsigned char> assembleMachine(Machine::MachineFile machine, std::string path);
+	class Assembled {
+	public:
+		std::vector<unsigned char> data;
+		int origin;
+	};
+
+	Assembled assembleMachine(Machine::MachineFile machine, std::string path);
 	std::string getRule(Machine::MachineFile, std::string name);
 }

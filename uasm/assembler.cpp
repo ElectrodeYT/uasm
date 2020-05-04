@@ -8,11 +8,12 @@
 
 #define BITSET_INSTRUCTION_SIZE 128
 
-std::vector<unsigned char> Assembler::assembleMachine(Machine::MachineFile machine, std::string path) {
+Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, std::string path) {
+	Assembler::Assembled ret;
 	std::vector<unsigned char> prog;
 	// get some important rules
-	int origin = std::stoi(getRule(machine, "default-origin"));
-	int inst_size = std::stoi(getRule(machine, "inst-size"));
+	int origin = std::stoi(getRule(machine, "default-origin"), 0, 0);
+	int inst_size = std::stoi(getRule(machine, "inst-size"), 0, 0);
 	// define some variables
 	std::vector<Variable> vars; // for things like labels and stuff
 	std::vector<Instruction> instructions; // instructions
@@ -24,7 +25,16 @@ std::vector<unsigned char> Assembler::assembleMachine(Machine::MachineFile machi
 	while (std::getline(file, s)) {
 		// seperate the string by whitespace
 		std::vector<std::string> split = Helper::splitString(s, ' ');
-		std::vector<std::string> arguments = Helper::splitString(split.at(1), ',');;
+		std::string arguments_string;
+		std::vector<std::string> arguments;
+		if (split.size() > 1) {
+			// concatante everything past the 
+			std::stringstream concat(arguments_string);
+			for (int i = 1; i < split.size(); i++) {
+				concat << split.at(i);
+			}
+			arguments = Helper::splitString(concat.str(), ',');
+		}
 		if (s == "") { continue; }
 		// things we need to check for this
 		if (s.at(0) == '.') {
@@ -32,7 +42,20 @@ std::vector<unsigned char> Assembler::assembleMachine(Machine::MachineFile machi
 			if (split.size() == 1) { QUIT_ERR_LINE("Assembler", "Line invalid!", s); }
 			// if we are here, then the line is at least somewhat valid
 			if (split.at(0) == ".lbl") { LOG_MSG_LINE("Assembler", "Found label, address " << prog.size() + origin, s); vars.push_back(Variable(split.at(1), prog.size() + origin)); continue; }
-			
+			if (split.at(0) == ".uasm") { continue; } // not required, just a indication to the programmer for the version the source code was made for
+			if (split.at(0) == ".origin") {
+				if (split.size() == 1) { QUIT_ERR_LINE("Assembler", "Missing operand: address", s); }
+				try {
+					LOG_MSG("Assembler", "DEBUG: origin line split.at(1): \"" << split.at(1) << "\"");
+					LOG_MSG("Assembler", "DEBUG: previous origin, decimal: " << origin);
+					origin = std::stoi(split.at(1), 0, 0);
+					LOG_MSG("Assembler", "DEBUG: new origin, decimal: " << origin);
+
+				} catch (std::invalid_argument) {
+					QUIT_ERR_LINE("Assembler", "Error decoding origin", s);
+				}
+				continue;
+			}
 			LOG_WRN_LINE("Assembler", "Found invalid dot line, ignoring.", s);
 			continue;
 		}
@@ -116,7 +139,8 @@ std::vector<unsigned char> Assembler::assembleMachine(Machine::MachineFile machi
 		// Step 2: put them into prog
 		size_t bit_count = instructions.at(i).machine_instruction.instruction.size();
 		Machine::Instruction machine_instruction = instructions.at(i).machine_instruction;
-		std::bitset<BITSET_INSTRUCTION_SIZE> bits;
+		//std::bitset<BITSET_INSTRUCTION_SIZE> bits;
+		int byte = 0;
 		for (int x = 0; x < bit_count; x++) {
 			bool bit = false;
 			// check if the instruction bit is always a 1 or a 0
@@ -126,22 +150,18 @@ std::vector<unsigned char> Assembler::assembleMachine(Machine::MachineFile machi
 				int arg = machine_instruction.instruction.at(x) - 2; // argument id
 				bit = ((arguments.at(arg) >> arguments_bit_offset.at(arg)++) & 1);
 			}
-			bits.set(x, bit);
+			// check if a byte has passed
+			if (x % 8 == 0 && x != 0) { byte++; }
+
+			unsigned char b = prog[instructions.at(i).address + ((machine_instruction.instruction_length - (int)1) - (int)byte)]; // get the current byte
+			int bit_position = x % 8; // calculate the position in the byte
+			prog[instructions.at(i).address + ((machine_instruction.instruction_length - (int)1) - (int)byte)] = (b & ~(1UL << bit_position)) | (bit << bit_position); // set the bit
 		}
 		LOG_MSG("Assembler", "Assembled instruction " << i);
-		// print the binary instruction
-		std::stringstream debug;
-		for (int d = bit_count - 1; d > 0; d--) {
-			debug << bits.test(d);
-		}
-		LOG_MSG("Assembler", "Assembled instruction binary: " << debug.str());
-		// put the bitset into prog
-		long long stuff = std::stoi(bits.to_string(), nullptr, 2);
-		for (int insert = 0; insert < machine_instruction.instruction_length; insert++) {
-			prog[instructions.at(i).address + insert] = (stuff >> (insert * 8)) & 0xff;
-		}
 	}
-	return prog;
+	ret.data = prog;
+	ret.origin = origin;
+	return ret;
 }
 
 std::string Assembler::getRule(Machine::MachineFile machine, std::string name) {

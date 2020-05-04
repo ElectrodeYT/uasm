@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include "args.h"
 #include "machine.h"
@@ -20,13 +21,13 @@ int main(int argc, char** argv) {
 	// Read machine file
 	Machine::MachineFile machinefile = Machine::readMachine(machine);
 	// Assemble Code
-	std::vector<unsigned char> code = Assembler::assembleMachine(machinefile, path);
-	for (int i = 0; i < code.size(); i++) {
-		std::cout << std::hex << " " << (int)code.at(i);
+	Assembler::Assembled code = Assembler::assembleMachine(machinefile, path);
+	for (int i = 0; i < code.data.size(); i++) {
+		std::cout << std::setfill('0') << std::setw(2) << std::hex << (int)code.data.at(i) << " ";
 	}
 	// Save file
 	std::fstream file(out, std::ios::out | std::ios::binary);
-	file.write((const char*)code.data(), code.size());
+	file.write((const char*)code.data.data(), code.data.size());
 	file.flush();
 	file.close();
 }
