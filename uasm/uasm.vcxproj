@@ -143,6 +143,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="chip8.s" />
+    <None Include="minicore.mach" />
     <None Include="README.md" />
     <None Include="simple.mach">
       <DeploymentContent>true</DeploymentContent>
