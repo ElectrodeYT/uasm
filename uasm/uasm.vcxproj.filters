@@ -63,5 +63,9 @@
     <None Include="chip8.s">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="minicore.mach" />
+    <None Include="6502.mach">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

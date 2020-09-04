@@ -32,7 +32,7 @@
 #inst: mov:d:s, d:r, s:r, 1000ddddssss0000, 0;	Set Register from Register
 #inst: movi:s, s:12, 1010ssssssssssss, 0;		Set I
 ; Arithmatic
-#inst: add:a:b, a:r, b:8, 0111ddddssssssss, 0;	Add
+#inst: add:a:b, a:r, b:8, 0111aaaabbbbbbbb, 0;	Add
 #inst: or:a:b, a:r, b:r, 1000aaaabbbb0001, 0;	Bitwise Or
 #inst: and:a:b, a:r, b:r, 1000aaaabbbb0010, 0;	Bitwise And
 #inst: xor:a:b, a:r, b:r, 1000aaaabbbb0011, 0;	Bitwise Xor
@@ -42,5 +42,9 @@
 #inst: shl:a, a:r, 1000aaaa00001110, 0;			Shift left
 ; Drawing
 #inst: draw:x:y:n, x:r, y:r, n:4, 1101xxxxyyyynnnn, 0;	Draw sprite
+#inst: fnt:a, a:r, 1111aaaa00110000, 0; Set I to font
 ;Rules
-#rule default-origin: 0x300;
+#rule: default-origin: 0x200;
+; Tests
+#define: test test:0x41 0x42 0x43;
+#define: test test1:0x41 0x42 0x43;

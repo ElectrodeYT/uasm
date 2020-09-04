@@ -14,9 +14,6 @@ namespace Machine {
 										// 2+: arguments 0+
 		int instruction_type = 0;
 		int instruction_length = 0; // length of the instruction, in bytes
-		/// Decode a file line into the instruction
-		void decodeInstLine(std::vector<std::string> line);
-
 	};
 	class Register {
 	public:
@@ -28,14 +25,22 @@ namespace Machine {
 		std::string name;
 		std::string data;
 	};
+	class Define {
+	public:
+		std::string line;
+		std::vector<unsigned char> bytes;
+	};
+
 	class MachineFile {
 	public:
 		std::vector<Instruction> instructions;
 		std::vector<Register> registers;
 		std::vector<Rule> rules;
-		
+		std::vector<Define> defines;
+
 		std::string version;
 		std::string name;
+		std::string assembly_mode;
 	};
 
 	MachineFile readMachine(std::string path);

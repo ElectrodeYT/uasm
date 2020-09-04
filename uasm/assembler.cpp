@@ -11,11 +11,12 @@
 Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, std::string path) {
 	Assembler::Assembled ret;
 	std::vector<unsigned char> prog;
+	int prog_seek = 0; // Current "PC" of the assembler
 	// get some important rules
 	int origin = std::stoi(getRule(machine, "default-origin"), 0, 0);
 	int inst_size = std::stoi(getRule(machine, "inst-size"), 0, 0);
 	// define some variables
-	std::vector<Variable> vars; // for things like labels and stuff
+	std::vector<Variable> symbols; // for things like labels and stuff
 	std::vector<Instruction> instructions; // instructions
 	// create a fstream for the assembly code
 	std::fstream file(path, std::ios::in);
@@ -23,12 +24,18 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 	/// Pass 1: calculate the "length" of each line and get the addresses of all labels and stuff
 	std::string s;
 	while (std::getline(file, s)) {
+		// remove everything past #
+		if (s.find("#") != std::string::npos) {
+			s = s.substr(0, s.find("#"));
+		}
 		// seperate the string by whitespace
 		std::vector<std::string> split = Helper::splitString(s, ' ');
-		std::string arguments_string;
-		std::vector<std::string> arguments;
+		
+		std::string command = split[0]; // Command or mnemonic;
+		std::vector<std::string> arguments; // Arguments to instruction
 		if (split.size() > 1) {
-			// concatante everything past the 
+			// concatante everything past the mnemonic
+			std::string arguments_string;
 			std::stringstream concat(arguments_string);
 			for (int i = 1; i < split.size(); i++) {
 				concat << split.at(i);
@@ -36,67 +43,126 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 			arguments = Helper::splitString(concat.str(), ',');
 		}
 		if (s == "") { continue; }
-		// things we need to check for this
+		// Check if the line is a dot command
 		if (s.at(0) == '.') {
 			if (split.empty()) { std::cerr << "[Assembler] [BUG] Split string does not contain any entries!\n"; exit(-2); }
 			if (split.size() == 1) { QUIT_ERR_LINE("Assembler", "Line invalid!", s); }
-			// if we are here, then the line is at least somewhat valid
-			if (split.at(0) == ".lbl") { LOG_MSG_LINE("Assembler", "Found label, address " << prog.size() + origin, s); vars.push_back(Variable(split.at(1), prog.size() + origin)); continue; }
-			if (split.at(0) == ".uasm") { continue; } // not required, just a indication to the programmer for the version the source code was made for
-			if (split.at(0) == ".origin") {
+			// Label
+			// Acts like a symbol
+			if (command == ".lbl") { symbols.push_back(Variable(split.at(1), prog.size() + origin)); continue; }
+			// UASM Version
+			// Not required
+			if (command == ".uasm") { continue; } // not required, just a indication to the programmer for the version the source code was made for
+			// Change origin
+			// Does not change the current offset from 0
+			if (command == ".origin") {
 				if (split.size() == 1) { QUIT_ERR_LINE("Assembler", "Missing operand: address", s); }
 				try {
-					LOG_MSG("Assembler", "DEBUG: origin line split.at(1): \"" << split.at(1) << "\"");
-					LOG_MSG("Assembler", "DEBUG: previous origin, decimal: " << origin);
 					origin = std::stoi(split.at(1), 0, 0);
-					LOG_MSG("Assembler", "DEBUG: new origin, decimal: " << origin);
-
 				} catch (std::invalid_argument) {
 					QUIT_ERR_LINE("Assembler", "Error decoding origin", s);
+				}
+				continue;
+			}
+			// Change current offset from 0
+			// Doesnt change the origin
+			if (command == ".seek") {
+				if (split.size() == 1) { QUIT_ERR_LINE("Assembler", "Missing operand: offset-from-origin", s); }
+				LOG_WRN_LINE("Assembler", "Using .seek can cause assembled instructions to be overwritten. It is not recommended to use this.", s);
+				try {
+					prog_seek = std::stoi(split.at(1), 0, 0);
+				} catch (std::invalid_argument) {
+					QUIT_ERR_LINE("Assembler", "Error decoding offset-from-origin", s);
+				}
+				continue;
+			}
+			// Skip n bytes
+			// Value not determined
+			if (command == ".skip") {
+				if (split.size() == 1) { QUIT_ERR_LINE("Assembler", "Missing operand: offset-from-origin", s); }
+				LOG_WRN_LINE("Assembler", "Using .seek can cause assembled instructions to be overwritten. It is not recommended to use this.", s);
+				try {
+					int amount_to_skip = std::stoi(split.at(1), 0, 0);
+					prog_seek += amount_to_skip;
+				} catch (std::invalid_argument) {
+					QUIT_ERR_LINE("Assembler", "Error decoding offset-from-origin", s);
+				}
+				continue;
+			}
+			// Define byte(s)
+			// Value determined
+			if (command == ".db") {
+				LOG_MSG_LINE("Assembler", "Writing bytes", s);
+				if (prog_seek > prog.size()) { prog.resize(prog_seek); } // Ensure prog has sufficent capacity
+				for (int i = 0; i < arguments.size(); i++) {
+					prog.insert(prog.begin() + prog_seek++, std::stoi(arguments[i], 0, 0));
+					LOG_MSG("Assembler", "Wrote byte " << std::stoi(arguments[i], 0, 0));
 				}
 				continue;
 			}
 			LOG_WRN_LINE("Assembler", "Found invalid dot line, ignoring.", s);
 			continue;
 		}
-		// probably an instruction
-		for (int i = 0; i < machine.instructions.size(); i++) {
-			if (split.at(0) == machine.instructions.at(i).mnemonic) {
-				Instruction inst;
-				// mnemonic matches, check arguments
-				if (machine.instructions.at(i).arguments.size() < arguments.size()) { goto instruction_argument_not_correct; }
-				// check if the argument type matches
-				for (int x = 0; x < machine.instructions.at(i).arguments.size(); x++) {
-					if (machine.instructions.at(i).arguments.at(x) == 0xffff) {
-						// a argument requires a register
-						for (int y = 0; y < machine.registers.size(); y++) {
-							if (arguments.at(x) == machine.registers.at(y).name) { goto argument_register_matches; }
-						}
-						goto instruction_argument_not_correct; // not a register
-					argument_register_matches:
-						continue;
-					}
-				}
-				// correct instruction, add instruction length to prog
-				inst.address = prog.size(); // not address in computer, but in prog
-				inst.machine_instruction = machine.instructions.at(i);
-				inst.arguments = arguments;
-				instructions.push_back(inst); // add instruction to vector
-				LOG_MSG_LINE("Assembler", "Got line length: " << machine.instructions.at(i).instruction_length, s);
-				for (int insert = 0; insert < machine.instructions.at(i).instruction_length; insert++) { prog.push_back(insert); }
-				goto line_done;
-			instruction_argument_not_correct: // simply skip this instruction
-				continue;
+		// Check if the line is a define
+		bool was_define = false;
+		for (int i = 0; i < machine.defines.size(); i++) {
+			if (machine.defines[i].line == s) {
+				// Add in the bytes
+				prog.insert(prog.begin() + prog_seek, machine.defines[i].bytes.begin(), machine.defines[i].bytes.end());
+				prog_seek += machine.defines[i].bytes.size();
+				was_define = true;
+				break;
 			}
 		}
-		QUIT_ERR_LINE("Assembler", "Invalid Instruction!", s);
-	line_done:
-		continue;
+		if (was_define) { continue; } // Check if the line was a define, and if so skip everything else
+
+		// probably an instruction
+		// Determine argument types
+		std::vector<bool> argument_registers;
+		for (int i = 0; i < arguments.size(); i++) {
+			bool is_register = false;
+			// Check if the argument has any characters (if it doesnt it can be discarded now)
+			if (arguments[i].find_first_not_of("123456789") == std::string::npos) { continue; }
+			// Check if the argument is a register
+			for (int r = 0; r < machine.registers.size(); r++) {
+				if (machine.registers[r].name == arguments[i]) { is_register = true; break; }
+			}
+			argument_registers.push_back(is_register);
+		}
+
+		bool instruction_was_valid = false;
+		for (int i = 0; i < machine.instructions.size(); i++) {
+			// Check if the instruction argument count matches
+			if (machine.instructions[i].arguments.size() != arguments.size()) { continue; }
+			// Check if the mnemonic matches
+			if (machine.instructions[i].mnemonic != command) { continue; }
+			// Check if the instruction has the same registers / immediate arguments
+			bool match = true;
+			for (int r = 0; r < machine.instructions[i].arguments.size(); r++) {
+				if (machine.instructions[i].arguments[r] == 0xFFFF && argument_registers[r] != true) { match = false; break; } else { continue; } // Fail if the argument should be a instruction but it isnt
+				if (argument_registers[r] != false) { match = false; break; } // Fail if the argument should not be a register but it is
+			}
+			if (match == false) { continue; } // Skip instruction if false
+			// We have found a compatible instruction
+			// Construct instruction variable
+			Instruction inst;
+			inst.address = prog_seek;
+			inst.arguments = arguments;
+			inst.machine_instruction = machine.instructions[i];
+			// Add instruction to instruction vector to process later
+			instructions.push_back(inst);
+			// Insert placeholder values into prog
+			if (prog_seek > prog.size()) { prog.resize(prog_seek + machine.instructions[i].instruction_length); } // Ensure prog has sufficent capacity
+			for (int insert = 0; insert < machine.instructions[i].instruction_length; insert++) { prog.insert(prog.begin() + prog_seek++, insert); }
+			// Set boolean and break out
+			instruction_was_valid = true;
+			break;
+		}
+		if (!instruction_was_valid) { QUIT_ERR_LINE("Assembler", "Invalid Instruction!", s); }
 	}
 
 	/// Pass 2: insert instructions into prog
 	file.close();
-	file.open(path, std::ios::in);
 	for (int i = 0; i < instructions.size(); i++) {
 		std::vector<long long> arguments; // arguments for this instruction
 		std::vector<int> arguments_bit_offset; // used in step 2
@@ -118,15 +184,15 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 			} else {
 				// data
 				try {
-					long long data = std::stoll(instructions.at(i).arguments.at(x));
+					long long data = std::stoll(instructions.at(i).arguments[x], 0, 0);
 					arguments.push_back(data);
 				} catch (std::invalid_argument) {
-					// check if the argument is a variable
+					// check if the argument is a symbol
 					bool fail = true;
-					for (int v = 0; v < vars.size(); v++) {
-						if (vars.at(v).name == instructions.at(i).arguments.at(x)) {
+					for (int v = 0; v < symbols.size(); v++) {
+						if (symbols.at(v).name == instructions.at(i).arguments.at(x)) {
 							fail = false;
-							arguments.push_back(vars.at(v).value);
+							arguments.push_back(symbols.at(v).value);
 							arguments_bit_offset.push_back(0);
 						}
 					}
@@ -170,7 +236,7 @@ std::string Assembler::getRule(Machine::MachineFile machine, std::string name) {
 	if (name == "default-origin") { ret = "0x0"; }
 	if (name == "inst-size") { ret = "0"; }
 	if (name == "endian") { ret = "0"; }
-	if (name == "inst-pad") { ret = "0"; }
+	if (name == "inst-pad") { ret = "1"; }
 	if (name == "jump-label-offset") { ret = "0"; }
 	for (int i = 0; i < machine.rules.size(); i++) {
 		if (machine.rules.at(i).name == name) {

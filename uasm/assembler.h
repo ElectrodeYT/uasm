@@ -19,7 +19,7 @@ namespace Assembler {
 	class Assembled {
 	public:
 		std::vector<unsigned char> data;
-		int origin;
+		int origin = 0;
 	};
 
 	Assembled assembleMachine(Machine::MachineFile machine, std::string path);
