@@ -2,6 +2,7 @@
 #include "log.h"
 #include <sstream>
 #include <iostream>
+#include <exception>
 
 std::vector<std::string> Helper::splitStringByColon(std::string s) {
 	return splitString(s, ':');
@@ -23,10 +24,18 @@ std::vector<std::string> Helper::splitString(std::string s, char a) {
 	return ret;
 }
 
-std::vector<std::string> Helper::splitString_enforceCount(std::string s, char a, int len, std::string loc, std::string err) {
+std::vector<std::string> Helper::splitString_enforceCount(std::string s, char a, int len) {
 	std::vector<std::string> ret = splitString(s, a);
 	if (ret.size() != len) {
-		QUIT_ERR(loc, err);
+		// Incorrect size
+		ret.clear();
+		return ret;
 	}
 	return ret;
+}
+
+std::string Helper::trimString(std::string s) {
+	while (s.size() > 1 && s.at(0) == ' ') { s.erase(s.begin()); }
+	while (s.size() > 1 && s.at(s.size() - 1) == ' ') { s = s.substr(0, s.length() - 1); }
+	return s;
 }

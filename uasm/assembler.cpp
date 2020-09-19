@@ -11,9 +11,26 @@
 Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, std::string path) {
 	Assembler::Assembled ret;
 	std::vector<unsigned char> prog;
+	std::vector<unsigned char> data; // Used only if the cpu is a harvard style chip
+	// Check if the machine file was empty
+	if(machine.isEmpty()) {
+		LOG_ERR("Assembler", "Machine empty!");
+		ret.failed = true;
+		return ret;
+	}
 	int prog_seek = 0; // Current "PC" of the assembler
-	// get some important rules
+	int data_seek = 0; // Current data pointer of the assembler
+	// check if the cpu has a harvard architecture
+	bool cpu_is_harvard = std::stoi(getRule(machine, "cpu-is-harvard"), 0, 0);
+	bool data_segment = false; // Used to determine wether something should be written to prog or data
+
+    // get some important rules
 	int origin = std::stoi(getRule(machine, "default-origin"), 0, 0);
+	int data_origin;
+	// If the cpu is a harvard style cpu, read the rule for the data origin
+	// else, mirror the code origin
+	if (cpu_is_harvard) { data_origin = std::stoi(getRule(machine, "default-data-origin"), 0, 0); } else { data_origin = origin; }
+	
 	int inst_size = std::stoi(getRule(machine, "inst-size"), 0, 0);
 	// define some variables
 	std::vector<Variable> symbols; // for things like labels and stuff
@@ -29,6 +46,7 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 			s = s.substr(0, s.find("#"));
 		}
 		// seperate the string by whitespace
+		s = Helper::trimString(s);
 		std::vector<std::string> split = Helper::splitString(s, ' ');
 		
 		std::string command = split[0]; // Command or mnemonic;
@@ -46,59 +64,116 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 		// Check if the line is a dot command
 		if (s.at(0) == '.') {
 			if (split.empty()) { std::cerr << "[Assembler] [BUG] Split string does not contain any entries!\n"; exit(-2); }
-			if (split.size() == 1) { QUIT_ERR_LINE("Assembler", "Line invalid!", s); }
+			if (split.size() == 1) {
+				LOG_ERR_LINE("Assembler", "Line invalid!", s);
+				ret.failed = true;
+				return ret;
+			}
 			// Label
 			// Acts like a symbol
-			if (command == ".lbl") { symbols.push_back(Variable(split.at(1), prog.size() + origin)); continue; }
+			if (command == ".lbl") {
+				if(cpu_is_harvard && data_segment) { symbols.push_back(Variable(split.at(1), data_seek + data_origin, true)); continue; }
+				symbols.push_back(Variable(split.at(1), prog_seek + origin, false)); continue;
+			}
 			// UASM Version
 			// Not required
 			if (command == ".uasm") { continue; } // not required, just a indication to the programmer for the version the source code was made for
 			// Change origin
 			// Does not change the current offset from 0
 			if (command == ".origin") {
-				if (split.size() == 1) { QUIT_ERR_LINE("Assembler", "Missing operand: address", s); }
 				try {
+					// If the CPU is a harvard style and the data segment is the current segment, set the data segment origin
+					if (cpu_is_harvard && data_segment) {
+						data_origin = std::stoi(split.at(1), 0, 0);
+					}
 					origin = std::stoi(split.at(1), 0, 0);
 				} catch (std::invalid_argument) {
-					QUIT_ERR_LINE("Assembler", "Error decoding origin", s);
+					LOG_ERR_LINE("Assembler", "Error decoding origin", s);
+					ret.failed = true;
+					return ret;
 				}
 				continue;
 			}
 			// Change current offset from 0
 			// Doesnt change the origin
 			if (command == ".seek") {
-				if (split.size() == 1) { QUIT_ERR_LINE("Assembler", "Missing operand: offset-from-origin", s); }
-				LOG_WRN_LINE("Assembler", "Using .seek can cause assembled instructions to be overwritten. It is not recommended to use this.", s);
+				if (split.size() == 1) {
+					LOG_ERR_LINE("Assembler", "Missing operand: offset-from-origin", s);
+					ret.failed = true;
+					return ret;
+				}
 				try {
-					prog_seek = std::stoi(split.at(1), 0, 0);
+					// Spew warning if not used in data segment or on non-harvard cpus
+					if (!cpu_is_harvard || !data_segment) {
+						LOG_WRN_LINE("Assembler", "Using .seek can cause assembled instructions to be overwritten. It is not recommended to use this.", s);
+					}
+					if (data_segment) {
+						data_seek = std::stoi(split.at(1), 0, 0);
+					} else {
+						prog_seek = std::stoi(split.at(1), 0, 0);
+					}
 				} catch (std::invalid_argument) {
-					QUIT_ERR_LINE("Assembler", "Error decoding offset-from-origin", s);
+					LOG_ERR_LINE("Assembler", "Error decoding offset-from-origin", s);
+					ret.failed = true;
+					return ret;
 				}
 				continue;
 			}
 			// Skip n bytes
 			// Value not determined
 			if (command == ".skip") {
-				if (split.size() == 1) { QUIT_ERR_LINE("Assembler", "Missing operand: offset-from-origin", s); }
-				LOG_WRN_LINE("Assembler", "Using .seek can cause assembled instructions to be overwritten. It is not recommended to use this.", s);
+				if (split.size() == 1) {
+					LOG_ERR_LINE("Assembler", "Missing operand: offset-from-origin", s);
+					ret.failed = true;
+					return ret;
+				}
 				try {
+					// Spew warning if not used in the data segment or on non-harvard cpus
+					if (!cpu_is_harvard || !data_segment) {
+						LOG_WRN_LINE("Assembler", "Using .seek can cause assembled instructions to be overwritten. It is not recommended to use this.", s);
+					}
 					int amount_to_skip = std::stoi(split.at(1), 0, 0);
-					prog_seek += amount_to_skip;
+					if (cpu_is_harvard && data_segment) {
+						data_seek += amount_to_skip;
+					} else {
+						prog_seek += amount_to_skip;
+					}
 				} catch (std::invalid_argument) {
-					QUIT_ERR_LINE("Assembler", "Error decoding offset-from-origin", s);
+					LOG_ERR_LINE("Assembler", "Error decoding offset-from-origin", s);
+					ret.failed = true;
+					return ret;
 				}
 				continue;
 			}
 			// Define byte(s)
 			// Value determined
 			if (command == ".db") {
-				LOG_MSG_LINE("Assembler", "Writing bytes", s);
-				if (prog_seek > prog.size()) { prog.resize(prog_seek); } // Ensure prog has sufficent capacity
-				for (int i = 0; i < arguments.size(); i++) {
-					prog.insert(prog.begin() + prog_seek++, std::stoi(arguments[i], 0, 0));
-					LOG_MSG("Assembler", "Wrote byte " << std::stoi(arguments[i], 0, 0));
+				// Check if the data segment is selected on harvard cpus
+				if (cpu_is_harvard && data_segment) {
+					if (data_seek > data.size()) { data.resize(data_seek); } // Ensure prog has sufficent capacity
+					for (int i = 0; i < arguments.size(); i++) {
+						data.insert(data.begin() + data_seek++, std::stoi(arguments[i], 0, 0));
+					}
+				} else {
+					if (prog_seek > prog.size()) { prog.resize(prog_seek); } // Ensure prog has sufficent capacity
+					for (int i = 0; i < arguments.size(); i++) {
+						prog.insert(prog.begin() + prog_seek++, std::stoi(arguments[i], 0, 0));
+					}
 				}
 				continue;
+			}
+			// Select segment
+			if (command == ".segment") {
+				if (!cpu_is_harvard) {
+					LOG_ERR_LINE("Assembler", "Not supported on non-harvard cpus", s);
+					ret.failed = true;
+					return ret;
+				}
+				if (split[1] == "code") { data_segment = false; continue; }
+				if (split[1] == "data") { data_segment = true; continue; }
+				LOG_ERR_LINE("Assembler", "Invalid segment", s);
+				ret.failed = true;
+				return ret;
 			}
 			LOG_WRN_LINE("Assembler", "Found invalid dot line, ignoring.", s);
 			continue;
@@ -116,6 +191,12 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 		}
 		if (was_define) { continue; } // Check if the line was a define, and if so skip everything else
 
+		if (cpu_is_harvard && data_segment) {
+			LOG_ERR_LINE("Assembler", "Instruction definition in data segment", s);
+			ret.failed = true;
+			return ret;
+		}
+
 		// probably an instruction
 		// Determine argument types
 		std::vector<bool> argument_registers;
@@ -131,6 +212,7 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 		}
 
 		bool instruction_was_valid = false;
+		// Loop through every instruction this machine has
 		for (int i = 0; i < machine.instructions.size(); i++) {
 			// Check if the instruction argument count matches
 			if (machine.instructions[i].arguments.size() != arguments.size()) { continue; }
@@ -158,7 +240,11 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 			instruction_was_valid = true;
 			break;
 		}
-		if (!instruction_was_valid) { QUIT_ERR_LINE("Assembler", "Invalid Instruction!", s); }
+		if (!instruction_was_valid) {
+			LOG_ERR_LINE("Assembler", "Invalid Instruction!", s);
+			ret.failed = true;
+			return ret;
+		}
 	}
 
 	/// Pass 2: insert instructions into prog
@@ -178,7 +264,9 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 					}
 				}
 				if (reg == -0xff) {
-					QUIT_ERR("Assembler", "BUG: Could not find register in pass 2!");
+					LOG_ERR("Assembler", "BUG: Could not find register in pass 2!");
+					ret.failed = true;
+					return ret;
 				}
 				arguments.push_back(reg);
 			} else {
@@ -197,7 +285,9 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 						}
 					}
 					if (!fail) { continue; }
-					QUIT_ERR("Assembler", "Could not convert string to int! TODO: Perform a check in pass 1");
+					LOG_ERR("Assembler", "Could not convert string to int! TODO: Perform a check in pass 1");
+					ret.failed = true;
+					return ret;
 				}
 			}
 			arguments_bit_offset.push_back(0);
@@ -223,10 +313,11 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 			int bit_position = x % 8; // calculate the position in the byte
 			prog[instructions.at(i).address + ((machine_instruction.instruction_length - (int)1) - (int)byte)] = (b & ~(1UL << bit_position)) | (bit << bit_position); // set the bit
 		}
-		LOG_MSG("Assembler", "Assembled instruction " << i);
 	}
-	ret.data = prog;
-	ret.origin = origin;
+	ret.prog = prog; // Store assembled instructions
+	ret.data = data; // Store data segment
+	ret.harvard = cpu_is_harvard; // Store if the cpu is of harvard architecture
+	ret.origin = origin; // Store instruction origin
 	return ret;
 }
 
@@ -234,10 +325,12 @@ std::string Assembler::getRule(Machine::MachineFile machine, std::string name) {
 	std::string ret;
 	// some defaults
 	if (name == "default-origin") { ret = "0x0"; }
+	if (name == "default-data-origin") { ret = "0x0"; }
 	if (name == "inst-size") { ret = "0"; }
 	if (name == "endian") { ret = "0"; }
 	if (name == "inst-pad") { ret = "1"; }
 	if (name == "jump-label-offset") { ret = "0"; }
+	if (name == "cpu-is-harvard") { ret = "0"; }
 	for (int i = 0; i < machine.rules.size(); i++) {
 		if (machine.rules.at(i).name == name) {
 			ret = machine.rules.at(i).data;

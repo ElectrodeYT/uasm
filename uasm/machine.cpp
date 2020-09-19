@@ -2,6 +2,7 @@
 #include <iostream>
 #include <sstream>
 #include <algorithm>
+#include <exception>
 #include "machine.h"
 #include "helper.h"
 #include "log.h"
@@ -21,7 +22,7 @@ MachineFile Machine::readMachine(std::string path) {
 		path = path += ".mach";
 	}
 	std::ifstream ifstream(path);
-	if (!ifstream.is_open()) { QUIT_ERR("Machine", "Machine file could not be opened! File name: " << path); }
+	if (!ifstream.is_open()) { LOG_ERR("Machine", "Machine file could not be opened! File name: " << path); machine.failed = true; return machine; }
 	std::string s;
 
 	// List of instructions we still need to process
@@ -29,9 +30,21 @@ MachineFile Machine::readMachine(std::string path) {
 
 	// Read machine file, and pass simple things now
 	while (std::getline(ifstream, s)) {
-		std::vector<std::string> file_line = convertFileLineToVector(s);
+		std::vector<std::string> file_line;
+		try {
+			file_line = convertFileLineToVector(s);
+		} catch (std::invalid_argument) {
+			LOG_ERR_LINE("Machine", "File line invalid!", s);
+			machine.failed = true;
+			return machine;
+		}
 		if (file_line.size() == 0) { continue; } // Skip if the line is empty
-		if (file_line.size() < 2) { QUIT_ERR_LINE("Machine", "Not enough arguments", s); } // Throw an error if the line has too few arguments
+		// Throw an error if the line has too few arguments
+		if (file_line.size() < 2) {
+			LOG_ERR_LINE("Machine", "Not enough arguments", s);
+			machine.failed = true;
+			return machine;
+		}
 		// Check some simple commands
 		std::string name = file_line[0];
 		if (name == "uasm") {
@@ -40,14 +53,24 @@ MachineFile Machine::readMachine(std::string path) {
 			LOG_MSG("Machine", "Machine name: " << file_line[1]);
 		} else if (name == "reg") {
 			// Split register definition
-			std::vector<std::string> split = Helper::splitString_enforceCount(file_line[1], ':', 2, "Machine", "Not enough arguments");
+			std::vector<std::string> split = Helper::splitString_enforceCount(file_line[1], ':', 2);
+			if (split.size() == 0) {
+				LOG_ERR_LINE("Machine", "Not enough arguments", s);
+				machine.failed = true;
+				return machine;
+			}
 			Register reg;
 			reg.name = split[0];
 			reg.bitsize = std::stoi(split[1], 0, 0);
 			machine.registers.push_back(reg);
 		} else if (name == "rule") {
 			// Split register definition
-			std::vector<std::string> split = Helper::splitString_enforceCount(file_line[1], ':', 2, "Machine", "Not enough arguments");
+			std::vector<std::string> split = Helper::splitString_enforceCount(file_line[1], ':', 2);
+			if (split.size() == 0) {
+				LOG_ERR_LINE("Machine", "Not enough arguments", s);
+				machine.failed = true;
+				return machine;
+			}
 			Rule rule;
 			rule.name = split[0];
 			rule.data = split[1];
@@ -67,7 +90,8 @@ MachineFile Machine::readMachine(std::string path) {
 			line = line.substr(line.find_first_not_of(' '), line.find_last_not_of(' ')); // Trim line
 			// Get bytes
 			int bytes_string_begin = s.find_last_of(':') + 1;
-			int bytes_string_length = s.find_last_of(';') - bytes_string_begin;
+			int bytes_string_length = s.length() - bytes_string_begin;
+			if (s.find(';') != std::string::npos) { bytes_string_length = s.find(';') - bytes_string_length; } // Check if the line has a comment in it
 			std::string bytes_string = s.substr(bytes_string_begin, bytes_string_length);
 			bytes_string = bytes_string.substr(s.find_first_not_of(' '), s.find_last_not_of(' '));
 			std::vector<std::string> bytes = Helper::splitString(bytes_string, ' ');
@@ -77,7 +101,9 @@ MachineFile Machine::readMachine(std::string path) {
 					define.line = line;
 					define.bytes.push_back(byte);
 				} catch (std::invalid_argument) {
-					QUIT_ERR_LINE("Machine", "Invalid number", s);
+					LOG_ERR_LINE("Machine", "Invalid number", s);
+					machine.failed = true;
+					return machine;
 				}
 			}
 			machine.defines.push_back(define);
@@ -100,7 +126,12 @@ MachineFile Machine::readMachine(std::string path) {
 		// Add operands
 		std::vector<char> operands_c; // char of operand, used for creating the instruction bits
 		for (int x = 0; x < operands.size(); x++) {
-			std::vector<std::string> operand = Helper::splitString_enforceCount(instr_list[i][0], ':', 2, "Machine", "Instruction Operand Invalid!");
+			std::vector<std::string> operand = Helper::splitString_enforceCount(instr_list[i][0], ':', 2);
+			if (operand.size() == 0) {
+				LOG_ERR("Machine", "Invalid Instruction");
+				machine.failed = true;
+				return machine;
+			}
 			operands_c.push_back(operand[0][0]);
 			int bit_count = 0;
 			if (operand[1] == "r") {
@@ -112,7 +143,11 @@ MachineFile Machine::readMachine(std::string path) {
 			instr_list[i].erase(instr_list[i].begin()); // Remove that from the instruction list
 		}
 		std::string bits = instr_list[i][0];
-		if (bits.length() % 8 != 0) { QUIT_ERR("Machine", "Bits is not a multiple of 8!"); }
+		if (bits.length() % 8 != 0) {
+			LOG_ERR("Machine", "Bits is not a multiple of 8!");
+			machine.failed = true;
+			return machine;
+		}
 		int mode = std::stoi(instr_list[i][1], 0, 0);
 		// Set Instruction bits array
 		for (int x = 0; x < bits.length(); x++) {
@@ -125,7 +160,11 @@ MachineFile Machine::readMachine(std::string path) {
 					for (int y = 0; y < operands_c.size(); y++) {
 						if (bits[x] == operands_c[y]) { id = y + 2; break; }
 					}
-					if (id == 0) { QUIT_ERR("Machine", "Invalid bit set in instruction " << name); }
+					if (id == 0) {
+						LOG_ERR("Machine", "Invalid bit set in instruction " << name);
+						machine.failed = true;
+						return machine;
+					}
 					inst.instruction.push_back(id);
 					break;
 				}
@@ -143,16 +182,6 @@ MachineFile Machine::readMachine(std::string path) {
 #pragma region Helper functions
 std::vector<std::string> Machine::convertFileLineToVector(std::string s) {
 	std::vector<std::string> ret;
-	// Check if the file contains no important symbols
-	// Return nothing if it doesnt
-	if (s.find(";") == std::string::npos && s.find("#") == std::string::npos) {
-		return ret;
-	}
-	// Check if the file contains a ;
-	// Throw an error if not
-	if (s.find(";") == std::string::npos) {
-		QUIT_ERR_LINE("Machine", "File line invalid!", s);
-	}
 	// Check if the file contains a #
 	// Return nothing if it doesnt
 	if (s.find("#") == std::string::npos) {
@@ -161,12 +190,21 @@ std::vector<std::string> Machine::convertFileLineToVector(std::string s) {
 	// Check if the file contains a :
 	// Throw an error if not
 	if (s.find(":") == std::string::npos) {
-		QUIT_ERR_LINE("Machine", "File line invalid!", s);
+		throw std::invalid_argument("File line invalid!");
 	}
-	s = s.substr(s.find("#") + 1, s.find(";")); // Get main line
-	std::string name = s.substr(0, s.find(":")); // Get name
-	std::string cont = s.substr(s.find(":") + 1, s.length()); // Get line content
-	cont = cont.substr(cont.find_first_not_of(' '), cont.find_last_not_of(' ')); // Trimm cont
+	// Get main file line
+	int main_file_line_begin = s.find('#') + 1;
+	int main_file_line_length = s.length() - main_file_line_begin + 1;
+
+	// Check if file contains a comment and update main_file_line_begin if it does
+	if (s.find(';') != std::string::npos) {
+		main_file_line_length = s.find(';') - main_file_line_begin;
+	} 
+	s = s.substr(main_file_line_begin, main_file_line_length);
+
+	std::string name = s.substr(0, s.find(':')); // Get name
+	std::string cont = s.substr(s.find(':') + 1, s.length() - s.find(':')); // Get line content
+	cont = cont.substr(cont.find_first_not_of(' '), cont.find_last_not_of(' ')); // Trim cont
 	// Construct ret
 	ret.push_back(name);
 	std::vector<std::string> cont_split = Helper::splitString(cont, ',');

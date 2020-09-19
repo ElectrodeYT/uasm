@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="args.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="machine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -28,6 +25,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="assembler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="args.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -53,18 +53,27 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />
-    <None Include="simple.mach" />
-    <None Include="simple.s">
+    <None Include="examples\machines\defines_test.mach">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="chip8.mach">
+    <None Include="examples\source\defines_test.s">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="chip8.s">
+    <None Include="examples\source\chip8.s">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="minicore.mach" />
-    <None Include="6502.mach">
+    <None Include="examples\machines\minicore.mach" />
+    <None Include="examples\machines\simple.mach" />
+    <None Include="examples\source\minicore.s">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="examples\source\simple.s">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="examples\machines\chip8.mach">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="examples\machines\6502.mach">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

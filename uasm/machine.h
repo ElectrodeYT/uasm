@@ -41,6 +41,16 @@ namespace Machine {
 		std::string version;
 		std::string name;
 		std::string assembly_mode;
+
+		bool failed = false;
+
+		// Check if the machine file was empty and so basically no machine was constructed
+		// (Except rules)
+		bool isEmpty() {
+			if (instructions.size() == 0 && defines.size() == 0
+				&& registers.size() == 0) { return true; }
+			return false;
+		}
 	};
 
 	MachineFile readMachine(std::string path);
