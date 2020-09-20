@@ -1,6 +1,7 @@
 #include "helper.h"
 #include "log.h"
 #include <sstream>
+#include <fstream>
 #include <iostream>
 #include <exception>
 
@@ -38,4 +39,17 @@ std::string Helper::trimString(std::string s) {
 	while (s.size() > 1 && s.at(0) == ' ') { s.erase(s.begin()); }
 	while (s.size() > 1 && s.at(s.size() - 1) == ' ') { s = s.substr(0, s.length() - 1); }
 	return s;
+}
+
+std::vector<std::string> Helper::readIntoVector(std::ifstream* stream) {
+	std::vector<std::string> ret;
+	std::string s;
+	while (std::getline(stream[0], s)) { ret.push_back(s); }
+	return ret;
+}
+std::string Helper::removeTrailingAndLeading(std::string s, char c) {
+	std::string ret = s;
+	while (ret.size() > 1 && ret.at(0) == ' ') { ret.erase(ret.begin()); }
+	while (ret.size() > 1 && ret.at(ret.size() - 1) == ' ') { ret.erase(ret.end()); }
+	return ret;
 }

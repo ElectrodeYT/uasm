@@ -27,6 +27,6 @@ namespace Assembler {
 		bool failed = false;
 	};
 
-	Assembled assembleMachine(Machine::MachineFile machine, std::string path);
+	Assembled assembleMachine(Machine::MachineFile machine, std::vector<std::string> lines);
 	std::string getRule(Machine::MachineFile, std::string name);
 }

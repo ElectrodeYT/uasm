@@ -14,22 +14,17 @@
 using namespace Machine;
 
 // Turn a file into a MachineFile
-MachineFile Machine::readMachine(std::string path) {
+MachineFile Machine::readMachine(std::vector<std::string> lines) {
 	MachineFile machine = MachineFile();
 	int warn_count = 0; // warning counter
-	// Check if path contains a extension
-	if (path.find('.') == std::string::npos) {
-		path = path += ".mach";
-	}
-	std::ifstream ifstream(path);
-	if (!ifstream.is_open()) { LOG_ERR("Machine", "Machine file could not be opened! File name: " << path); machine.failed = true; return machine; }
-	std::string s;
+
 
 	// List of instructions we still need to process
 	std::vector<std::vector<std::string>> instr_list;
 
 	// Read machine file, and pass simple things now
-	while (std::getline(ifstream, s)) {
+	for(int i = 0; i < lines.size(); i++) {
+		std::string s = lines[i];
 		std::vector<std::string> file_line;
 		try {
 			file_line = convertFileLineToVector(s);
@@ -91,9 +86,9 @@ MachineFile Machine::readMachine(std::string path) {
 			// Get bytes
 			int bytes_string_begin = s.find_last_of(':') + 1;
 			int bytes_string_length = s.length() - bytes_string_begin;
-			if (s.find(';') != std::string::npos) { bytes_string_length = s.find(';') - bytes_string_length; } // Check if the line has a comment in it
+			if (s.find(';') != std::string::npos) { bytes_string_length = s.find(';') - bytes_string_begin; } // Check if the line has a comment in it
 			std::string bytes_string = s.substr(bytes_string_begin, bytes_string_length);
-			bytes_string = bytes_string.substr(s.find_first_not_of(' '), s.find_last_not_of(' '));
+			bytes_string = Helper::removeTrailingAndLeading(bytes_string, ' ');
 			std::vector<std::string> bytes = Helper::splitString(bytes_string, ' ');
 			for (int i = 0; i < bytes.size(); i++) {
 				try {
@@ -148,7 +143,14 @@ MachineFile Machine::readMachine(std::string path) {
 			machine.failed = true;
 			return machine;
 		}
-		int mode = std::stoi(instr_list[i][1], 0, 0);
+		// Get instruction mode
+		try {
+			int mode = std::stoi(instr_list[i][1], 0, 0);
+		} catch (std::invalid_argument) {
+			LOG_ERR("Machine", "No instruction mode! Instruction name: " << name);
+			machine.failed = true;
+			return machine;
+		}
 		// Set Instruction bits array
 		for (int x = 0; x < bits.length(); x++) {
 			switch (bits[x]) {

@@ -53,7 +53,7 @@ namespace Machine {
 		}
 	};
 
-	MachineFile readMachine(std::string path);
+	MachineFile readMachine(std::vector<std::string> lines);
 	/// Convert a file line to a vector
 	/// First entry is the "name", others are the arguments
 	std::vector<std::string> convertFileLineToVector(std::string s);

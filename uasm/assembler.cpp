@@ -8,7 +8,7 @@
 
 #define BITSET_INSTRUCTION_SIZE 128
 
-Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, std::string path) {
+Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, std::vector<std::string> lines) {
 	Assembler::Assembled ret;
 	std::vector<unsigned char> prog;
 	std::vector<unsigned char> data; // Used only if the cpu is a harvard style chip
@@ -35,12 +35,9 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 	// define some variables
 	std::vector<Variable> symbols; // for things like labels and stuff
 	std::vector<Instruction> instructions; // instructions
-	// create a fstream for the assembly code
-	std::fstream file(path, std::ios::in);
-
 	/// Pass 1: calculate the "length" of each line and get the addresses of all labels and stuff
-	std::string s;
-	while (std::getline(file, s)) {
+	for (int i = 0; i < lines.size(); i++) {
+		std::string s = lines[i];
 		// remove everything past #
 		if (s.find("#") != std::string::npos) {
 			s = s.substr(0, s.find("#"));
@@ -199,7 +196,7 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 
 		// probably an instruction
 		// Determine argument types
-		std::vector<bool> argument_registers;
+		std::vector<bool> argument_registers; // true if register
 		for (int i = 0; i < arguments.size(); i++) {
 			bool is_register = false;
 			// Check if the argument has any characters (if it doesnt it can be discarded now)
@@ -248,7 +245,6 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 	}
 
 	/// Pass 2: insert instructions into prog
-	file.close();
 	for (int i = 0; i < instructions.size(); i++) {
 		std::vector<long long> arguments; // arguments for this instruction
 		std::vector<int> arguments_bit_offset; // used in step 2
