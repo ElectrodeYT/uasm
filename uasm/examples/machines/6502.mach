@@ -1,0 +1,6 @@
+#uasm: 1.0
+#name: 6502 Microproccessor
+
+#mode: set-instructions
+
+#inst: 
