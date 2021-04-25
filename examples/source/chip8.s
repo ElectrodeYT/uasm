@@ -11,4 +11,3 @@ draw v0, v1, 5
 jmp loop
 .skip 10 # skip 10 bytes
 .db 0x41, 0x42, 0x43, 0x44 # test this
-test test

@@ -10,7 +10,7 @@
 #include <chrono>
 
 int main(int argc, char** argv) {
-	std::chrono::time_point<std::chrono::steady_clock> start = std::chrono::high_resolution_clock::now();
+	// std::chrono::time_point<std::chrono::steady_clock> start = std::chrono::high_resolution_clock::now();
 	// Decode the arguments
 	Arguments::Argument args = Arguments::decodeArgV(argc, argv);
 	// Figure out what machine should be compiled for
@@ -61,6 +61,6 @@ int main(int argc, char** argv) {
 	file.write((const char*)code.data.data(), code.data.size());
 	file.flush();
 	file.close();
-	std::chrono::time_point<std::chrono::steady_clock> end = std::chrono::high_resolution_clock::now();
-	std::cout << "\n\nTime: " << std::dec << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " milliseconds\n";
+	// std::chrono::time_point<std::chrono::steady_clock> end = std::chrono::high_resolution_clock::now();
+	// std::cout << "\n\nTime: " << std::dec << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " milliseconds\n";
 }
