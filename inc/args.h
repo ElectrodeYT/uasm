@@ -12,5 +12,6 @@ namespace Arguments {
 	};
 
 	Argument decodeArgV(int argc, char** argv);
-	std::string getArgument(Argument args, char name);
+	bool getArgument(Argument args, char name, std::string* out);
+	bool getArgument(Argument args, char name, bool* out);
 }

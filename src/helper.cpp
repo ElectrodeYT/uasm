@@ -18,8 +18,8 @@ std::vector<std::string> Helper::splitString(std::string s, char a) {
 		// Use getline to stop reading at a character
 		getline(ss, t, a);
 		// remove trailing and leading whitespaces
-		while (t.size() > 1 && t.at(0) == ' ') { t.erase(t.begin()); }
-		while (t.size() > 1 && t.at(t.size() - 1) == ' ') { t.erase(t.end()); }
+		while (t.size() > 1 && t[0] == ' ') { t.erase(t.begin()); }
+		while (t.size() > 1 && t[t.size() - 1] == ' ') { t.erase(t.end()); }
 		ret.push_back(t);
 	}
 	return ret;
@@ -36,8 +36,8 @@ std::vector<std::string> Helper::splitString_enforceCount(std::string s, char a,
 }
 
 std::string Helper::trimString(std::string s) {
-	while (s.size() > 1 && s.at(0) == ' ') { s.erase(s.begin()); }
-	while (s.size() > 1 && s.at(s.size() - 1) == ' ') { s = s.substr(0, s.length() - 1); }
+	while (s.size() > 1 && s[0] == ' ') { s.erase(s.begin()); }
+	while (s.size() > 1 && s[s.size() - 1] == ' ') { s = s.substr(0, s.length() - 1); }
 	return s;
 }
 
@@ -49,7 +49,7 @@ std::vector<std::string> Helper::readIntoVector(std::ifstream* stream) {
 }
 std::string Helper::removeTrailingAndLeading(std::string s, char c) {
 	std::string ret = s;
-	while (ret.size() > 1 && ret.at(0) == ' ') { ret.erase(ret.begin()); }
-	while (ret.size() > 1 && ret.at(ret.size() - 1) == ' ') { ret.erase(ret.end()); }
+	while (ret.size() > 1 && ret[0] == ' ') { ret.erase(ret.begin()); }
+	while (ret.size() > 1 && ret[ret.size() - 1] == ' ') { ret.erase(ret.end()); }
 	return ret;
 }

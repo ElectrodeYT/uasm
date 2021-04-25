@@ -53,13 +53,13 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 			std::string arguments_string;
 			std::stringstream concat(arguments_string);
 			for (int i = 1; i < split.size(); i++) {
-				concat << split.at(i);
+				concat << split[i];
 			}
 			arguments = Helper::splitString(concat.str(), ',');
 		}
 		if (s == "") { continue; }
 		// Check if the line is a dot command
-		if (s.at(0) == '.') {
+		if (s[0] == '.') {
 			if (split.empty()) { std::cerr << "[Assembler] [BUG] Split string does not contain any entries!\n"; exit(-2); }
 			if (split.size() == 1) {
 				LOG_ERR_LINE("Assembler", "Line invalid!", s);
@@ -69,8 +69,8 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 			// Label
 			// Acts like a symbol
 			if (command == ".lbl") {
-				if(cpu_is_harvard && data_segment) { symbols.push_back(Variable(split.at(1), data_seek + data_origin, true)); continue; }
-				symbols.push_back(Variable(split.at(1), prog_seek + origin, false)); continue;
+				if(cpu_is_harvard && data_segment) { symbols.push_back(Variable(split[1], data_seek + data_origin, true)); continue; }
+				symbols.push_back(Variable(split[1], prog_seek + origin, false)); continue;
 			}
 			// UASM Version
 			// Not required
@@ -81,9 +81,9 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 				try {
 					// If the CPU is a harvard style and the data segment is the current segment, set the data segment origin
 					if (cpu_is_harvard && data_segment) {
-						data_origin = std::stoi(split.at(1), 0, 0);
+						data_origin = std::stoi(split[1], 0, 0);
 					}
-					origin = std::stoi(split.at(1), 0, 0);
+					origin = std::stoi(split[1], 0, 0);
 				} catch (std::invalid_argument) {
 					LOG_ERR_LINE("Assembler", "Error decoding origin", s);
 					ret.failed = true;
@@ -105,9 +105,9 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 						LOG_WRN_LINE("Assembler", "Using .seek can cause assembled instructions to be overwritten. It is not recommended to use this.", s);
 					}
 					if (data_segment) {
-						data_seek = std::stoi(split.at(1), 0, 0);
+						data_seek = std::stoi(split[1], 0, 0);
 					} else {
-						prog_seek = std::stoi(split.at(1), 0, 0);
+						prog_seek = std::stoi(split[1], 0, 0);
 					}
 				} catch (std::invalid_argument) {
 					LOG_ERR_LINE("Assembler", "Error decoding offset-from-origin", s);
@@ -129,7 +129,7 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 					if (!cpu_is_harvard || !data_segment) {
 						LOG_WRN_LINE("Assembler", "Using .seek can cause assembled instructions to be overwritten. It is not recommended to use this.", s);
 					}
-					int amount_to_skip = std::stoi(split.at(1), 0, 0);
+					int amount_to_skip = std::stoi(split[1], 0, 0);
 					if (cpu_is_harvard && data_segment) {
 						data_seek += amount_to_skip;
 					} else {
@@ -249,12 +249,12 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 		std::vector<long long> arguments; // arguments for this instruction
 		std::vector<int> arguments_bit_offset; // used in step 2
 		// Step 1: get arguments as long longs
-		for (int x = 0; x < instructions.at(i).machine_instruction.arguments.size(); x++) {
-			if (instructions.at(i).machine_instruction.arguments.at(x) == 0xffff) {
+		for (int x = 0; x < instructions[i].machine_instruction.arguments.size(); x++) {
+			if (instructions[i].machine_instruction.arguments[x] == 0xffff) {
 				// register
 				int reg = -0xff;
 				for (int y = 0; y < machine.registers.size(); y++) {
-					if (machine.registers.at(y).name == instructions.at(i).arguments.at(x)) {
+					if (machine.registers[y].name == instructions[i].arguments[x]) {
 						reg = y;
 						break;
 					}
@@ -268,15 +268,15 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 			} else {
 				// data
 				try {
-					long long data = std::stoll(instructions.at(i).arguments[x], 0, 0);
+					long long data = std::stoll(instructions[i].arguments[x], 0, 0);
 					arguments.push_back(data);
 				} catch (std::invalid_argument) {
 					// check if the argument is a symbol
 					bool fail = true;
 					for (int v = 0; v < symbols.size(); v++) {
-						if (symbols.at(v).name == instructions.at(i).arguments.at(x)) {
+						if (symbols[v].name == instructions[i].arguments[x]) {
 							fail = false;
-							arguments.push_back(symbols.at(v).value);
+							arguments.push_back(symbols[v].value);
 							arguments_bit_offset.push_back(0);
 						}
 					}
@@ -289,25 +289,25 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 			arguments_bit_offset.push_back(0);
 		}
 		// Step 2: put them into prog
-		size_t bit_count = instructions.at(i).machine_instruction.instruction.size();
-		Machine::Instruction machine_instruction = instructions.at(i).machine_instruction;
+		size_t bit_count = instructions[i].machine_instruction.instruction.size();
+		Machine::Instruction machine_instruction = instructions[i].machine_instruction;
 		//std::bitset<BITSET_INSTRUCTION_SIZE> bits;
 		int byte = 0;
 		for (int x = 0; x < bit_count; x++) {
 			bool bit = false;
 			// check if the instruction bit is always a 1 or a 0
-			if (machine_instruction.instruction.at(x) == 0 || machine_instruction.instruction.at(x) == 1) {
-				bit = machine_instruction.instruction.at(x) == 1;
+			if (machine_instruction.instruction[x] == 0 || machine_instruction.instruction[x] == 1) {
+				bit = machine_instruction.instruction[x] == 1;
 			} else {
-				int arg = machine_instruction.instruction.at(x) - 2; // argument id
-				bit = ((arguments.at(arg) >> arguments_bit_offset.at(arg)++) & 1);
+				int arg = machine_instruction.instruction[x] - 2; // argument id
+				bit = ((arguments[arg] >> arguments_bit_offset[arg]++) & 1);
 			}
 			// check if a byte has passed
 			if (x % 8 == 0 && x != 0) { byte++; }
 
-			unsigned char b = prog[instructions.at(i).address + ((machine_instruction.instruction_length - (int)1) - (int)byte)]; // get the current byte
+			unsigned char b = prog[instructions[i].address + ((machine_instruction.instruction_length - (int)1) - (int)byte)]; // get the current byte
 			int bit_position = x % 8; // calculate the position in the byte
-			prog[instructions.at(i).address + ((machine_instruction.instruction_length - (int)1) - (int)byte)] = (b & ~(1UL << bit_position)) | (bit << bit_position); // set the bit
+			prog[instructions[i].address + ((machine_instruction.instruction_length - (int)1) - (int)byte)] = (b & ~(1UL << bit_position)) | (bit << bit_position); // set the bit
 		}
 	}
 	ret.prog = prog; // Store assembled instructions
@@ -328,8 +328,8 @@ std::string Assembler::getRule(Machine::MachineFile machine, std::string name) {
 	if (name == "jump-label-offset") { ret = "0"; }
 	if (name == "cpu-is-harvard") { ret = "0"; }
 	for (int i = 0; i < machine.rules.size(); i++) {
-		if (machine.rules.at(i).name == name) {
-			ret = machine.rules.at(i).data;
+		if (machine.rules[i].name == name) {
+			ret = machine.rules[i].data;
 		}
 	}
 	return ret;
