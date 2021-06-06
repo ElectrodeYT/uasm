@@ -18,25 +18,25 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 		ret.failed = true;
 		return ret;
 	}
-	int prog_seek = 0; // Current "PC" of the assembler
-	int data_seek = 0; // Current data pointer of the assembler
+	size_t prog_seek = 0; // Current "PC" of the assembler
+	size_t data_seek = 0; // Current data pointer of the assembler
 	// check if the cpu has a harvard architecture
 	bool cpu_is_harvard = std::stoi(getRule(machine, "cpu-is-harvard"), 0, 0);
 	bool data_segment = false; // Used to determine wether something should be written to prog or data
 
     // get some important rules
-	int origin = std::stoi(getRule(machine, "default-origin"), 0, 0);
-	int data_origin;
+	size_t origin = std::stoi(getRule(machine, "default-origin"), 0, 0);
+	size_t data_origin;
 	// If the cpu is a harvard style cpu, read the rule for the data origin
 	// else, mirror the code origin
 	if (cpu_is_harvard) { data_origin = std::stoi(getRule(machine, "default-data-origin"), 0, 0); } else { data_origin = origin; }
 	
-	int inst_size = std::stoi(getRule(machine, "inst-size"), 0, 0);
+	// size_t inst_size = std::stoi(getRule(machine, "inst-size"), 0, 0);
 	// define some variables
 	std::vector<Variable> symbols; // for things like labels and stuff
 	std::vector<Instruction> instructions; // instructions
 	/// Pass 1: calculate the "length" of each line and get the addresses of all labels and stuff
-	for (int i = 0; i < lines.size(); i++) {
+	for (size_t i = 0; i < lines.size(); i++) {
 		std::string s = lines[i];
 		// remove everything past #
 		if (s.find("#") != std::string::npos) {
@@ -52,7 +52,7 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 			// concatante everything past the mnemonic
 			std::string arguments_string;
 			std::stringstream concat(arguments_string);
-			for (int i = 1; i < split.size(); i++) {
+			for (size_t i = 1; i < split.size(); i++) {
 				concat << split[i];
 			}
 			arguments = Helper::splitString(concat.str(), ',');
@@ -84,7 +84,7 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 						data_origin = std::stoi(split[1], 0, 0);
 					}
 					origin = std::stoi(split[1], 0, 0);
-				} catch (std::invalid_argument) {
+				} catch (...) {
 					LOG_ERR_LINE("Assembler", "Error decoding origin", s);
 					ret.failed = true;
 					return ret;
@@ -109,7 +109,7 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 					} else {
 						prog_seek = std::stoi(split[1], 0, 0);
 					}
-				} catch (std::invalid_argument) {
+				} catch (...) {
 					LOG_ERR_LINE("Assembler", "Error decoding offset-from-origin", s);
 					ret.failed = true;
 					return ret;
@@ -135,7 +135,7 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 					} else {
 						prog_seek += amount_to_skip;
 					}
-				} catch (std::invalid_argument) {
+				} catch (...) {
 					LOG_ERR_LINE("Assembler", "Error decoding offset-from-origin", s);
 					ret.failed = true;
 					return ret;
@@ -148,12 +148,12 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 				// Check if the data segment is selected on harvard cpus
 				if (cpu_is_harvard && data_segment) {
 					if (data_seek > data.size()) { data.resize(data_seek); } // Ensure prog has sufficent capacity
-					for (int i = 0; i < arguments.size(); i++) {
+					for (size_t i = 0; i < arguments.size(); i++) {
 						data.insert(data.begin() + data_seek++, std::stoi(arguments[i], 0, 0));
 					}
 				} else {
 					if (prog_seek > prog.size()) { prog.resize(prog_seek); } // Ensure prog has sufficent capacity
-					for (int i = 0; i < arguments.size(); i++) {
+					for (size_t i = 0; i < arguments.size(); i++) {
 						prog.insert(prog.begin() + prog_seek++, std::stoi(arguments[i], 0, 0));
 					}
 				}
@@ -177,7 +177,7 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 		}
 		// Check if the line is a define
 		bool was_define = false;
-		for (int i = 0; i < machine.defines.size(); i++) {
+		for (size_t i = 0; i < machine.defines.size(); i++) {
 			if (machine.defines[i].line == s) {
 				// Add in the bytes
 				prog.insert(prog.begin() + prog_seek, machine.defines[i].bytes.begin(), machine.defines[i].bytes.end());
@@ -197,12 +197,12 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 		// probably an instruction
 		// Determine argument types
 		std::vector<bool> argument_registers; // true if register
-		for (int i = 0; i < arguments.size(); i++) {
+		for (size_t i = 0; i < arguments.size(); i++) {
 			bool is_register = false;
 			// Check if the argument has any characters (if it doesnt it can be discarded now)
 			if (arguments[i].find_first_not_of("123456789") == std::string::npos) { continue; }
 			// Check if the argument is a register
-			for (int r = 0; r < machine.registers.size(); r++) {
+			for (size_t r = 0; r < machine.registers.size(); r++) {
 				if (machine.registers[r].name == arguments[i]) { is_register = true; break; }
 			}
 			argument_registers.push_back(is_register);
@@ -210,14 +210,14 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 
 		bool instruction_was_valid = false;
 		// Loop through every instruction this machine has
-		for (int i = 0; i < machine.instructions.size(); i++) {
+		for (size_t i = 0; i < machine.instructions.size(); i++) {
 			// Check if the instruction argument count matches
 			if (machine.instructions[i].arguments.size() != arguments.size()) { continue; }
 			// Check if the mnemonic matches
 			if (machine.instructions[i].mnemonic != command) { continue; }
 			// Check if the instruction has the same registers / immediate arguments
 			bool match = true;
-			for (int r = 0; r < machine.instructions[i].arguments.size(); r++) {
+			for (size_t r = 0; r < machine.instructions[i].arguments.size(); r++) {
 				if (machine.instructions[i].arguments[r] == 0xFFFF && argument_registers[r] != true) { match = false; break; } else { continue; } // Fail if the argument should be a instruction but it isnt
 				if (argument_registers[r] != false) { match = false; break; } // Fail if the argument should not be a register but it is
 			}
@@ -245,15 +245,15 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 	}
 
 	/// Pass 2: insert instructions into prog
-	for (int i = 0; i < instructions.size(); i++) {
+	for (size_t i = 0; i < instructions.size(); i++) {
 		std::vector<long long> arguments; // arguments for this instruction
 		std::vector<int> arguments_bit_offset; // used in step 2
 		// Step 1: get arguments as long longs
-		for (int x = 0; x < instructions[i].machine_instruction.arguments.size(); x++) {
+		for (size_t x = 0; x < instructions[i].machine_instruction.arguments.size(); x++) {
 			if (instructions[i].machine_instruction.arguments[x] == 0xffff) {
 				// register
 				int reg = -0xff;
-				for (int y = 0; y < machine.registers.size(); y++) {
+				for (size_t y = 0; y < machine.registers.size(); y++) {
 					if (machine.registers[y].name == instructions[i].arguments[x]) {
 						reg = y;
 						break;
@@ -270,10 +270,10 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 				try {
 					long long data = std::stoll(instructions[i].arguments[x], 0, 0);
 					arguments.push_back(data);
-				} catch (std::invalid_argument) {
+				} catch (...) {
 					// check if the argument is a symbol
 					bool fail = true;
-					for (int v = 0; v < symbols.size(); v++) {
+					for (size_t v = 0; v < symbols.size(); v++) {
 						if (symbols[v].name == instructions[i].arguments[x]) {
 							fail = false;
 							arguments.push_back(symbols[v].value);
@@ -293,7 +293,7 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 		Machine::Instruction machine_instruction = instructions[i].machine_instruction;
 		//std::bitset<BITSET_INSTRUCTION_SIZE> bits;
 		int byte = 0;
-		for (int x = 0; x < bit_count; x++) {
+		for (size_t x = 0; x < bit_count; x++) {
 			bool bit = false;
 			// check if the instruction bit is always a 1 or a 0
 			if (machine_instruction.instruction[x] == 0 || machine_instruction.instruction[x] == 1) {
@@ -327,7 +327,7 @@ std::string Assembler::getRule(Machine::MachineFile machine, std::string name) {
 	if (name == "inst-pad") { ret = "1"; }
 	if (name == "jump-label-offset") { ret = "0"; }
 	if (name == "cpu-is-harvard") { ret = "0"; }
-	for (int i = 0; i < machine.rules.size(); i++) {
+	for (size_t i = 0; i < machine.rules.size(); i++) {
 		if (machine.rules[i].name == name) {
 			ret = machine.rules[i].data;
 		}

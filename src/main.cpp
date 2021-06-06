@@ -23,27 +23,43 @@ int main(int argc, char** argv) {
 
 	// std::chrono::time_point<std::chrono::steady_clock> start = std::chrono::high_resolution_clock::now();
 	// Decode the arguments
-	Arguments::Argument args = Arguments::decodeArgV(argc, argv);
+	Arguments::the().decodeArgV(argc, argv);
 	// Figure out what machine should be compiled for
 	std::string machine_path = "";
 	std::string path = "";
 	std::string out = "";
-	bool quiet;
 
-	if(!Arguments::getArgument(args, 'm', &machine_path) || machine_path == "") {
+	// Check if arguments were given
+	if(!Arguments::the().checkArgumentExistence('m')) {
+		LOG_ERR("UASM", "-m not given!"); exit(-1);
+	}
+
+	if(!Arguments::the().checkArgumentExistence('i')) {
+		LOG_ERR("UASM", "-m not given!"); exit(-1);
+	}
+
+	if(!Arguments::the().checkArgumentExistence('o')) {
+		LOG_ERR("UASM", "-m not given!"); exit(-1);
+	}
+
+	if(!Arguments::the().getArgument('m', machine_path) || machine_path == "") {
 		LOG_ERR("UASM", "No machine input file!"); exit(-1); 
 	}
 	// Get file to be compiled
-	if(!Arguments::getArgument(args, 'i', &path) || path == "") {
+	if(!Arguments::the().getArgument('i', path) || path == "") {
 		LOG_ERR("UASM", "No Input file!"); exit(-1);
 	}
 	// Output file
-	if(!Arguments::getArgument(args, 'o', &out) || out == "") {
+	if(!Arguments::the().getArgument('o', out) || out == "") {
 		LOG_ERR("UASM", "No Output File!"); exit(-1);
 	}
 
+	DEBUG_MSG("UASM", "Reading quiet mode");
+
 	// Set quiet mode
-	Arguments::getArgument(args, 'q', &quiet);
+	quiet = Arguments::the().checkArgumentExistence('q');
+
+	DEBUG_MSG("UASM", "Quiet mode: " << quiet);
 
 	// Check if the machine path contains a extension
 	if (machine_path.find('.') == std::string::npos) {
@@ -53,12 +69,14 @@ int main(int argc, char** argv) {
 	// Open files
 	std::ifstream machine(machine_path);
 	if (!machine.is_open()) { LOG_ERR("UASM", "Machine file could not be opened!"); exit(-1); }
+
 	std::ifstream assembler(path);
 	if (!assembler.is_open()) { LOG_ERR("UASM", "Assembler file could not be opened!"); exit(-1); }
 
 	// Read files
 	std::vector<std::string> machine_lines = Helper::readIntoVector(&machine);
 	std::vector<std::string> assembler_lines = Helper::readIntoVector(&assembler);
+	
 	// Read machine file
 	Machine::MachineFile machinefile = Machine::readMachine(machine_lines);
 
@@ -69,16 +87,16 @@ int main(int argc, char** argv) {
 	// Return if code assembly failed
 	if (code.failed) { return -1; }
 
-	
+
 	std::cout << "Code: \n";
-	for (int i = 0; i < code.prog.size(); i++) {
+	for (size_t i = 0; i < code.prog.size(); i++) {
 		std::cout << std::setfill('0') << std::setw(2) << std::hex << (int)code.prog.at(i) << " ";
 	}
 	std::cout << "\n\n";
 
 	if (code.harvard) {
 		std::cout << "Data: \n";
-		for (int i = 0; i < code.data.size(); i++) {
+		for (size_t i = 0; i < code.data.size(); i++) {
 			std::cout << std::setfill('0') << std::setw(2) << std::hex << (int)code.data.at(i) << " ";
 		}
 	}

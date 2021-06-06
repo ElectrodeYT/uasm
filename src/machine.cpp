@@ -16,19 +16,17 @@ using namespace Machine;
 // Turn a file into a MachineFile
 MachineFile Machine::readMachine(std::vector<std::string> lines) {
 	MachineFile machine = MachineFile();
-	int warn_count = 0; // warning counter
-
 
 	// List of instructions we still need to process
 	std::vector<std::vector<std::string>> instr_list;
 
 	// Read machine file, and pass simple things now
-	for(int i = 0; i < lines.size(); i++) {
+	for(size_t i = 0; i < lines.size(); i++) {
 		std::string s = lines[i];
 		std::vector<std::string> file_line;
 		try {
 			file_line = convertFileLineToVector(s);
-		} catch (std::invalid_argument) {
+		} catch (...) {
 			LOG_ERR_LINE("Machine", "File line invalid!", s);
 			machine.failed = true;
 			return machine;
@@ -90,12 +88,12 @@ MachineFile Machine::readMachine(std::vector<std::string> lines) {
 			std::string bytes_string = s.substr(bytes_string_begin, bytes_string_length);
 			bytes_string = Helper::removeTrailingAndLeading(bytes_string, ' ');
 			std::vector<std::string> bytes = Helper::splitString(bytes_string, ' ');
-			for (int i = 0; i < bytes.size(); i++) {
+			for (size_t i = 0; i < bytes.size(); i++) {
 				try {
 					unsigned char byte = std::stoi(bytes[i], 0, 0);
 					define.line = line;
 					define.bytes.push_back(byte);
-				} catch (std::invalid_argument) {
+				} catch (...) {
 					LOG_ERR_LINE("Machine", "Invalid number", s);
 					machine.failed = true;
 					return machine;
@@ -107,7 +105,7 @@ MachineFile Machine::readMachine(std::vector<std::string> lines) {
 
 	LOG_MSG("Machine", "Read file, processing instructions");
 	// Process all instructions
-	for (int i = 0; i < instr_list.size(); i++) {
+	for (size_t i = 0; i < instr_list.size(); i++) {
 		Instruction inst;
 		// Get instruction name and arguments
 		std::vector<std::string> operands = Helper::splitString(instr_list[i][0], ':');
@@ -120,7 +118,7 @@ MachineFile Machine::readMachine(std::vector<std::string> lines) {
 		instr_list[i].erase(instr_list[i].begin());
 		// Add operands
 		std::vector<char> operands_c; // char of operand, used for creating the instruction bits
-		for (int x = 0; x < operands.size(); x++) {
+		for (size_t x = 0; x < operands.size(); x++) {
 			std::vector<std::string> operand = Helper::splitString_enforceCount(instr_list[i][0], ':', 2);
 			if (operand.size() == 0) {
 				LOG_ERR("Machine", "Invalid Instruction");
@@ -146,20 +144,21 @@ MachineFile Machine::readMachine(std::vector<std::string> lines) {
 		// Get instruction mode
 		try {
 			int mode = std::stoi(instr_list[i][1], 0, 0);
-		} catch (std::invalid_argument) {
+			(void)mode;
+		} catch (...) {
 			LOG_ERR("Machine", "No instruction mode! Instruction name: " << name);
 			machine.failed = true;
 			return machine;
 		}
 		// Set Instruction bits array
-		for (int x = 0; x < bits.length(); x++) {
+		for (size_t x = 0; x < bits.length(); x++) {
 			switch (bits[x]) {
 				case '0': inst.instruction.push_back(0); break; // Always bit 0
 				case '1': inst.instruction.push_back(1); break; // Always bit 1
 				// Argument
 				default: {
 					int id = 0;
-					for (int y = 0; y < operands_c.size(); y++) {
+					for (size_t y = 0; y < operands_c.size(); y++) {
 						if (bits[x] == operands_c[y]) { id = y + 2; break; }
 					}
 					if (id == 0) {
@@ -181,7 +180,6 @@ MachineFile Machine::readMachine(std::vector<std::string> lines) {
 	return machine;
 }
 
-#pragma region Helper functions
 std::vector<std::string> Machine::convertFileLineToVector(std::string s) {
 	std::vector<std::string> ret;
 	// Check if the file contains a #
@@ -214,5 +212,4 @@ std::vector<std::string> Machine::convertFileLineToVector(std::string s) {
 	// Remove from all strings # and ;
 	return ret;
 }
-#pragma endregion
 

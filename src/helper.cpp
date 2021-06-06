@@ -25,7 +25,7 @@ std::vector<std::string> Helper::splitString(std::string s, char a) {
 	return ret;
 }
 
-std::vector<std::string> Helper::splitString_enforceCount(std::string s, char a, int len) {
+std::vector<std::string> Helper::splitString_enforceCount(std::string s, char a, size_t len) {
 	std::vector<std::string> ret = splitString(s, a);
 	if (ret.size() != len) {
 		// Incorrect size
@@ -47,9 +47,9 @@ std::vector<std::string> Helper::readIntoVector(std::ifstream* stream) {
 	while (std::getline(stream[0], s)) { ret.push_back(s); }
 	return ret;
 }
-std::string Helper::removeTrailingAndLeading(std::string s, char c) {
+std::string Helper::removeTrailingAndLeading(std::string s, char c = ' ') {
 	std::string ret = s;
-	while (ret.size() > 1 && ret[0] == ' ') { ret.erase(ret.begin()); }
-	while (ret.size() > 1 && ret[ret.size() - 1] == ' ') { ret.erase(ret.end()); }
+	while (ret.size() > 1 && ret[0] == c) { ret.erase(ret.begin()); }
+	while (ret.size() > 1 && ret[ret.size() - 1] == c) { ret.erase(ret.end()); }
 	return ret;
 }
