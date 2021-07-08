@@ -2,3 +2,10 @@ build
 build/*
 examples/*.o
 examples/uasm
+.vscode
+.vscode/*
+cmake-build-debug
+cmake-build-*
+.idea
+.idea/*
+*.o
