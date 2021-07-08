@@ -1,47 +1,47 @@
-#uasm: 1.0;
-#name: Chip-8;
+uasm: 1.0;
+name: Chip-8;
 ; Registers
-#reg: v0:8;
-#reg: v1:8;
-#reg: v2:8;
-#reg: v3:8;
-#reg: v4:8;
-#reg: v5:8;
-#reg: v6:8;
-#reg: v7:8;
-#reg: v8:8;
-#reg: v9:8;
-#reg: va:8;
-#reg: vb:8;
-#reg: vc:8;
-#reg: vd:8;
-#reg: ve:8;
-#reg: vf:8;
+reg: v0:8;
+reg: v1:8;
+reg: v2:8;
+reg: v3:8;
+reg: v4:8;
+reg: v5:8;
+reg: v6:8;
+reg: v7:8;
+reg: v8:8;
+reg: v9:8;
+reg: va:8;
+reg: vb:8;
+reg: vc:8;
+reg: vd:8;
+reg: ve:8;
+reg: vf:8;
 ; Opcodes
-#inst: dispclear, 0000000011100000, 0;					Clear Display
-#inst: ret, 0000000011101110, 0;							Return from subroutine
-#inst: call:a, a:12, 0010aaaaaaaaaaaa, 0;				Call
+inst: dispclear, 0000000011100000, 0;					Clear Display
+inst: ret, 0000000011101110, 0;							Return from subroutine
+inst: call:a, a:12, 0010aaaaaaaaaaaa, 0;				Call
 ; Branch
-#inst: jmp:a, a:12, 0001aaaaaaaaaaaa, 0;					Jump
-#inst: skp:x:n, x:r, n:8, 0011xxxxnnnnnnnn, 0;	Skip if equal
-#inst: skp:x:y, x:r,y:r, 0101xxxxyyyy0000, 0;	Skip if equal
-#inst: sknp:x:n, x:r,n:8, 0100xxxxnnnnnnnn, 0;	Skip if not equal
-#inst: sknp:x:n, x:r,y:r, 1001xxxxyyyy0000, 0;	Skip if not equal
+inst: jmp:a, a:12, 0001aaaaaaaaaaaa, 0;					Jump
+inst: skp:x:n, x:r, n:8, 0011xxxxnnnnnnnn, 0;	Skip if equal
+inst: skp:x:y, x:r,y:r, 0101xxxxyyyy0000, 0;	Skip if equal
+inst: sknp:x:n, x:r,n:8, 0100xxxxnnnnnnnn, 0;	Skip if not equal
+inst: sknp:x:n, x:r,y:r, 1001xxxxyyyy0000, 0;	Skip if not equal
 ; Move
-#inst: mov:d:s, d:r, s:8, 0110ddddssssssss, 0;	Set Register
-#inst: mov:d:s, d:r, s:r, 1000ddddssss0000, 0;	Set Register from Register
-#inst: movi:s, s:12, 1010ssssssssssss, 0;		Set I
+inst: mov:d:s, d:r, s:8, 0110ddddssssssss, 0;	Set Register
+inst: mov:d:s, d:r, s:r, 1000ddddssss0000, 0;	Set Register from Register
+inst: movi:s, s:12, 1010ssssssssssss, 0;		Set I
 ; Arithmatic
-#inst: add:a:b, a:r, b:8, 0111aaaabbbbbbbb, 0;	Add
-#inst: or:a:b, a:r, b:r, 1000aaaabbbb0001, 0;	Bitwise Or
-#inst: and:a:b, a:r, b:r, 1000aaaabbbb0010, 0;	Bitwise And
-#inst: xor:a:b, a:r, b:r, 1000aaaabbbb0011, 0;	Bitwise Xor
-#inst: add:a:b, a:r, b:r, 1000aaaabbbb0100, 0;	Add
-#inst: sub:a:b, a:r, b:r, 1000aaaabbbb0101, 0;	Sub
-#inst: shr:a, a:r, 1000aaaa00000110, 0;			Shift right
-#inst: shl:a, a:r, 1000aaaa00001110, 0;			Shift left
+inst: add:a:b, a:r, b:8, 0111aaaabbbbbbbb, 0;	Add
+inst: or:a:b, a:r, b:r, 1000aaaabbbb0001, 0;	Bitwise Or
+inst: and:a:b, a:r, b:r, 1000aaaabbbb0010, 0;	Bitwise And
+inst: xor:a:b, a:r, b:r, 1000aaaabbbb0011, 0;	Bitwise Xor
+inst: add:a:b, a:r, b:r, 1000aaaabbbb0100, 0;	Add
+inst: sub:a:b, a:r, b:r, 1000aaaabbbb0101, 0;	Sub
+inst: shr:a, a:r, 1000aaaa00000110, 0;			Shift right
+inst: shl:a, a:r, 1000aaaa00001110, 0;			Shift left
 ; Drawing
-#inst: draw:x:y:n, x:r, y:r, n:4, 1101xxxxyyyynnnn, 0;	Draw sprite
-#inst: fnt:a, a:r, 1111aaaa00110000, 0; Set I to font
+inst: draw:x:y:n, x:r, y:r, n:4, 1101xxxxyyyynnnn, 0;	Draw sprite
+inst: fnt:a, a:r, 1111aaaa00110000, 0; Set I to font
 ;Rules
-#rule: default-origin: 0x200;
+rule: default-origin: 0x200;

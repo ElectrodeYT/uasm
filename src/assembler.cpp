@@ -102,7 +102,7 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 				try {
 					// Spew warning if not used in data segment or on non-harvard cpus
 					if (!cpu_is_harvard || !data_segment) {
-						LOG_WRN_LINE("Assembler", "Using .seek can cause assembled instructions to be overwritten. It is not recommended to use this.", s);
+						LOG_WRN_LINE("Assembler", "Using .seek can cause assembled instructions to be overwritten. It is not recommended to use this", s);
 					}
 					if (data_segment) {
 						data_seek = std::stoi(split[1], 0, 0);
@@ -127,7 +127,7 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 				try {
 					// Spew warning if not used in the data segment or on non-harvard cpus
 					if (!cpu_is_harvard || !data_segment) {
-						LOG_WRN_LINE("Assembler", "Using .seek can cause assembled instructions to be overwritten. It is not recommended to use this.", s);
+						LOG_WRN_LINE("Assembler", "Using .skip can cause assembled instructions to be overwritten. It is not recommended to use this", s);
 					}
 					int amount_to_skip = std::stoi(split[1], 0, 0);
 					if (cpu_is_harvard && data_segment) {
@@ -215,6 +215,7 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 			if (machine.instructions[i].arguments.size() != arguments.size()) { continue; }
 			// Check if the mnemonic matches
 			if (machine.instructions[i].mnemonic != command) { continue; }
+			
 			// Check if the instruction has the same registers / immediate arguments
 			bool match = true;
 			for (size_t r = 0; r < machine.instructions[i].arguments.size(); r++) {
@@ -222,6 +223,7 @@ Assembler::Assembled Assembler::assembleMachine(Machine::MachineFile machine, st
 				if (argument_registers[r] != false) { match = false; break; } // Fail if the argument should not be a register but it is
 			}
 			if (match == false) { continue; } // Skip instruction if false
+
 			// We have found a compatible instruction
 			// Construct instruction variable
 			Instruction inst;

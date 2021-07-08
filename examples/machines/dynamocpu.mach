@@ -1,0 +1,27 @@
+uasm: 1.0
+name: DynamoCPU
+
+reg: a:8
+reg: b:8
+; link register: 8
+
+inst: nop, 00000000, 0
+inst: li:a:b, a:r, b:8, 000a0001bbbbbbbb, 0 ; Load immideate
+inst: swp, 00000010, 0 ; Swap registers
+inst: swl:a, a:r, 000a0011, 0 ; Swap register and link register
+inst: sdc:a:b, a:r, b:8, 000a0100bbbbbbbb, 0 ; Store immideate into data
+inst: invert:a, a:r, 000a0101, 0 ; Invert register logically
+inst: add, 00000110, 0 ; Add B into A
+inst: sub, 00000111, 0 ; Subtract B into A
+inst: shl:a:b, a:r, b:3, bbba1000, 0 ; Shift register left
+inst: shr:a:b, a:r, b:3,  bbba1001, 0 ; Shift register left
+inst: in:a, a:r, 000a1010, 0 ; Get input into register
+inst: out:a, a:r, 000a1011, 0 ; Set output from register
+inst: mdr:a, a:r, 000a1100, 0 ; Get byte in data segment at link register
+inst: jmp:a, a:8, 00001101aaaaaaaa, 0 ; Jump
+inst: jz:a, a:8, 00001110aaaaaaaa, 0 ; Jump
+inst: jnz:a, a:8, 00001111aaaaaaaa, 0 ; Jump
+
+
+rule: cpu-is-harvard: 1
+rule: default-origin: 0x0

@@ -50,6 +50,6 @@ std::vector<std::string> Helper::readIntoVector(std::ifstream* stream) {
 std::string Helper::removeTrailingAndLeading(std::string s, char c = ' ') {
 	std::string ret = s;
 	while (ret.size() > 1 && ret[0] == c) { ret.erase(ret.begin()); }
-	while (ret.size() > 1 && ret[ret.size() - 1] == c) { ret.erase(ret.end()); }
+	while (ret.size() > 1 && ret[ret.size() - 1] == c) { ret.erase(std::prev(ret.end())); }
 	return ret;
 }

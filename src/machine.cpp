@@ -121,7 +121,7 @@ MachineFile Machine::readMachine(std::vector<std::string> lines) {
 		for (size_t x = 0; x < operands.size(); x++) {
 			std::vector<std::string> operand = Helper::splitString_enforceCount(instr_list[i][0], ':', 2);
 			if (operand.size() == 0) {
-				LOG_ERR("Machine", "Invalid Instruction");
+				LOG_ERR("Machine", "Failed to parse instruction operands: " << name);
 				machine.failed = true;
 				return machine;
 			}
@@ -182,25 +182,31 @@ MachineFile Machine::readMachine(std::vector<std::string> lines) {
 
 std::vector<std::string> Machine::convertFileLineToVector(std::string s) {
 	std::vector<std::string> ret;
-	// Check if the file contains a #
-	// Return nothing if it doesnt
-	if (s.find("#") == std::string::npos) {
-		return ret;
-	}
-	// Check if the file contains a :
-	// Throw an error if not
-	if (s.find(":") == std::string::npos) {
-		throw std::invalid_argument("File line invalid!");
-	}
+
 	// Get main file line
-	int main_file_line_begin = s.find('#') + 1;
+	int main_file_line_begin = 0;
 	int main_file_line_length = s.length() - main_file_line_begin + 1;
+
+	// DEBUG_MSG("Machine", "convertFileLineToVector: 1");
 
 	// Check if file contains a comment and update main_file_line_begin if it does
 	if (s.find(';') != std::string::npos) {
 		main_file_line_length = s.find(';') - main_file_line_begin;
 	} 
 	s = s.substr(main_file_line_begin, main_file_line_length);
+
+	// Strip out all whitespace
+	s = Helper::removeTrailingAndLeading(s, ' ');
+	// Return nothing if the line is empty
+	if(s == "") {
+		return ret;
+	}
+
+	// Check if the file contains a :
+	// Throw an error if not
+	if (s.find(":") == std::string::npos) {
+		throw std::invalid_argument("File line invalid!");
+	}
 
 	std::string name = s.substr(0, s.find(':')); // Get name
 	std::string cont = s.substr(s.find(':') + 1, s.length() - s.find(':')); // Get line content

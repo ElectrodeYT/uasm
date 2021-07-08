@@ -1,5 +1,5 @@
-#name: Defines Test; Not a machine!
-#define: test1: 0x00
-#define: test2: 0x01
-#define: test3: 0x02
-#define: test4: 0x03
+name: Defines Test; Not a machine!
+define: test1: 0x00
+define: test2: 0x01
+define: test3: 0x02
+define: test4: 0x03
