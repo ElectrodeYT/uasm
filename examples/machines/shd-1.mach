@@ -1,0 +1,20 @@
+uasm: 1.0
+name: SHD-1
+; GP registers are specified a-d
+; LREG registers are specified 0-3
+; LREG 3 is PC
+reg: a:8
+reg: b:8
+reg: c:8
+reg: d:8
+
+inst: nop, 00000000, 0
+inst: mov:a:b, a:r, b:8, 000100aabbbbbbbb, 0
+inst: movl:a:b, a:2, b:16, 0011aa00bbbbbbbbbbbbbbbb, 0
+inst: jmp:a, a:16, 00111100aaaaaaaaaaaaaaaa, 0 ; same as movl 3, ....
+inst: movlm:a:b, a:2, b:r, 0100aabb, 0
+inst: out:a:b, a:r, b:8, 100000aabbbbbbbb, 0
+inst: in:a:b, a:r, b:8, 110000aabbbbbbbb, 0
+
+rule: default-origin: 0x00
+rule: cpu-is-harvard: 0

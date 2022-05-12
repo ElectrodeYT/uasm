@@ -36,9 +36,11 @@ std::vector<std::string> Helper::splitString_enforceCount(std::string s, char a,
 }
 
 std::string Helper::trimString(std::string s) {
-	while (s.size() > 1 && s[0] == ' ') { s.erase(s.begin()); }
-	while (s.size() > 1 && s[s.size() - 1] == ' ') { s = s.substr(0, s.length() - 1); }
-	return s;
+	const auto string_begin = s.find_first_not_of(" \t");
+    if(string_begin == std::string::npos) { return ""; }
+    const auto string_end = s.find_last_not_of(" \t");
+    const auto string_range = string_end - string_begin + 1;
+	return s.substr(string_begin, string_range);
 }
 
 std::vector<std::string> Helper::readIntoVector(std::ifstream* stream) {

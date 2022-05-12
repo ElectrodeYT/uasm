@@ -137,7 +137,7 @@ MachineFile Machine::readMachine(std::vector<std::string> lines) {
 		}
 		std::string bits = instr_list[i][0];
 		if (bits.length() % 8 != 0) {
-			LOG_ERR("Machine", "Bits is not a multiple of 8!");
+			LOG_ERR("Machine", "Bits is not a multiple of 8! Instruction: " << name);
 			machine.failed = true;
 			return machine;
 		}

@@ -35,11 +35,11 @@ int main(int argc, char** argv) {
 	}
 
 	if(!Arguments::the().checkArgumentExistence('i')) {
-		LOG_ERR("UASM", "-m not given!"); exit(-1);
+		LOG_ERR("UASM", "-i not given!"); exit(-1);
 	}
 
 	if(!Arguments::the().checkArgumentExistence('o')) {
-		LOG_ERR("UASM", "-m not given!"); exit(-1);
+		LOG_ERR("UASM", "-o not given!"); exit(-1);
 	}
 
 	if(!Arguments::the().getArgument('m', machine_path) || machine_path == "") {
@@ -88,16 +88,22 @@ int main(int argc, char** argv) {
 	if (code.failed) { return -1; }
 
 
+	std::cout << "Code size: " << std::dec << code.prog.size() << "\n";
 	std::cout << "Code: \n";
+	size_t count = 0;
 	for (size_t i = 0; i < code.prog.size(); i++) {
-		std::cout << std::setfill('0') << std::setw(2) << std::hex << (int)code.prog.at(i) << " ";
+        std::cout << "0x" << std::setfill('0') << std::setw(2) << std::hex << (int)code.prog.at(i);
+        if(i + 1 != code.prog.size()) { std::cout << ", "; }
+        if(++count == 10) { std::cout << "\n"; count = 0; }
 	}
 	std::cout << "\n\n";
 
 	if (code.harvard) {
 		std::cout << "Data: \n";
 		for (size_t i = 0; i < code.data.size(); i++) {
-			std::cout << std::setfill('0') << std::setw(2) << std::hex << (int)code.data.at(i) << " ";
+			std::cout << "0x" << std::setfill('0') << std::setw(2) << std::hex << (int)code.data.at(i);
+            if(i + 1 != code.data.size()) { std::cout << ", "; }
+            if(++count == 10) { std::cout << "\n"; count = 0; }
 		}
 	}
 	// Save file

@@ -1,11 +1,16 @@
 uasm: 1.0
 name: DynamoCPU
 
-reg: a:8
-reg: b:8
-; link register: 8
-; link prime register: 8
-; pc: 9
+reg: a:32
+reg: b:32
+reg: c:32
+reg: d:32
+reg: e:32
+reg: f
+g
+h
+
+
 
 inst: nop, 00000000, 0
 inst: li:a:b, a:r, b:8, 000a0001bbbbbbbb, 0 ; Load immideate
